@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Owner Sign-in</title>
+<style>
+:root { --bg: #f6f7f9; --panel: #fff; --ink: #1b1f24; --muted: #66707c; --line: #e3e6ea; --accent: #3b5bdb; --bad: #c92a2a; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0f1216; --panel: #171b21; --ink: #e6e9ee; --muted: #9aa4b1; --line: #262c35; --accent: #7d95ff; --bad: #ff6b6b; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: var(--bg); color: var(--ink);
+  font: 15px/1.5 "Segoe UI", system-ui, sans-serif; padding: 16px; }
+form { width: min(400px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 22px; display: grid; gap: 12px; }
+h1 { margin: 0; font-size: 19px; }
+.muted { color: var(--muted); font-size: 13px; }
+input { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; width: 100%; }
+button { font: inherit; cursor: pointer; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: #fff; padding: 9px 14px; }
+button:disabled { opacity: .6; cursor: progress; }
+.err { color: var(--bad); font-size: 13px; min-height: 18px; }
+</style>
+</head>
+<body>
+<form id="f"></form>
+<script>
+const f = document.getElementById("f");
+async function post(path, body) {
+  const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+}
+async function show() {
+  const s = await (await fetch("/api/owner/state")).json();
+  if (s.signed_in) { location.href = "/"; return; }
+  if (!s.exists) {
+    f.innerHTML = `<h1>☤ Set up the owner</h1>
+      <div class="muted">First start: enter the one-time setup code printed in the console's terminal, then choose the owner password (at least 10 characters).</div>
+      <input id="code" placeholder="Setup code" autocomplete="off" required>
+      <input id="p1" type="password" placeholder="New password" autocomplete="new-password" minlength="10" required>
+      <input id="p2" type="password" placeholder="Repeat password" autocomplete="new-password" minlength="10" required>
+      <div class="err" id="err"></div><button>Create owner</button>`;
+    f.onsubmit = async e => { e.preventDefault(); const b = f.querySelector("button"); b.disabled = true;
+      try {
+        if (p1.value !== p2.value) throw new Error("the passwords do not match");
+        await post("/api/owner/setup", { code: code.value, password: p1.value }); location.href = "/";
+      } catch (err) { document.getElementById("err").textContent = err.message; } b.disabled = false; };
+  } else {
+    f.innerHTML = `<h1>☤ Federation Console</h1><div class="muted">Owner sign-in</div>
+      <input id="pw" type="password" placeholder="Owner password" autocomplete="current-password" required autofocus>
+      <div class="err" id="err"></div><button>Sign in</button>`;
+    f.onsubmit = async e => { e.preventDefault(); const b = f.querySelector("button"); b.disabled = true;
+      try { await post("/api/owner/login", { password: pw.value }); location.href = "/"; }
+      catch (err) { document.getElementById("err").textContent = err.message; pw.select(); } b.disabled = false; };
+  }
+}
+show();
+</script>
+</body>
+</html>

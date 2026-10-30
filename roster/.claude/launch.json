@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "federation-console",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-I", "C:\\Users\\aliab\\OneDrive\\Documents\\Hermes\\console\\server.py"],
+      "port": 8765
+    }
+  ]
+}

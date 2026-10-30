@@ -1,0 +1,798 @@
+{
+  "version": "0.1",
+  "date": "2026-10-20",
+  "status": "draft-for-owner-correction",
+  "source": "Hermes Federation Implementation Specification v1.1",
+  "note": "Project roster, not a native Hermes config file (R15.01). Do not pass directly to Hermes.",
+  "federation": [
+    {
+      "id": "federation.hermes-admin",
+      "display_name": "Hermes Admin",
+      "persistence": "persistent",
+      "default_tier": "T4"
+    },
+    {
+      "id": "federation.coo",
+      "display_name": "Federation COO",
+      "persistence": "persistent",
+      "default_tier": "T3"
+    },
+    {
+      "id": "federation.modelops",
+      "display_name": "ModelOps",
+      "persistence": "persistent",
+      "default_tier": "T3"
+    },
+    {
+      "id": "federation.finops",
+      "display_name": "Quota/FinOps",
+      "persistence": "persistent",
+      "default_tier": "T3"
+    },
+    {
+      "id": "federation.infra-recovery",
+      "display_name": "Infrastructure and Recovery",
+      "persistence": "persistent",
+      "default_tier": "T1"
+    },
+    {
+      "id": "federation.knowledge",
+      "display_name": "Knowledge Management",
+      "persistence": "persistent",
+      "default_tier": "T1"
+    },
+    {
+      "id": "federation.security-policy",
+      "display_name": "Security/Policy",
+      "persistence": "persistent",
+      "default_tier": "T3"
+    },
+    {
+      "id": "federation.audit",
+      "display_name": "Independent Audit",
+      "persistence": "persistent",
+      "default_tier": "T3"
+    }
+  ],
+  "role_templates": [
+    {
+      "role": "receptionist",
+      "display_name": "Receptionist",
+      "persistence": "persistent",
+      "default_tier": "T1"
+    },
+    {
+      "role": "ceo",
+      "display_name": "CEO",
+      "persistence": "persistent",
+      "default_tier": "T4"
+    },
+    {
+      "role": "delivery-director",
+      "display_name": "Delivery Director",
+      "persistence": "persistent",
+      "default_tier": "T3"
+    },
+    {
+      "role": "engineering-director",
+      "display_name": "Engineering Director",
+      "persistence": "persistent",
+      "default_tier": "T3"
+    },
+    {
+      "role": "business-analyst",
+      "display_name": "Business Analyst/Sales",
+      "persistence": "persistent",
+      "default_tier": "T3"
+    },
+    {
+      "role": "project-manager",
+      "display_name": "Project Manager",
+      "persistence": "persistent",
+      "default_tier": "T1"
+    },
+    {
+      "role": "solution-architect",
+      "display_name": "Solution Architect",
+      "persistence": "on-demand",
+      "default_tier": "T4"
+    },
+    {
+      "role": "team-lead",
+      "display_name": "Team Lead",
+      "persistence": "on-demand",
+      "default_tier": "T3"
+    },
+    {
+      "role": "senior-developer",
+      "display_name": "Senior Developer",
+      "persistence": "on-demand",
+      "default_tier": "T3"
+    },
+    {
+      "role": "junior-developer",
+      "display_name": "Junior Developer",
+      "persistence": "on-demand",
+      "default_tier": "T1"
+    },
+    {
+      "role": "executor",
+      "display_name": "Executor",
+      "persistence": "on-demand",
+      "default_tier": "T1"
+    },
+    {
+      "role": "optimizer",
+      "display_name": "Optimizer",
+      "persistence": "on-demand",
+      "default_tier": "T3"
+    },
+    {
+      "role": "reviewer",
+      "display_name": "Reviewer",
+      "persistence": "on-demand",
+      "default_tier": "T1"
+    },
+    {
+      "role": "verifier",
+      "display_name": "Verifier",
+      "persistence": "on-demand",
+      "default_tier": "T0"
+    },
+    {
+      "role": "release-controller",
+      "display_name": "Release Controller",
+      "persistence": "on-demand",
+      "default_tier": "T0"
+    },
+    {
+      "role": "qa",
+      "display_name": "QA",
+      "persistence": "on-demand",
+      "default_tier": "T1"
+    },
+    {
+      "role": "security",
+      "display_name": "Security",
+      "persistence": "on-demand",
+      "default_tier": "T3"
+    },
+    {
+      "role": "devops",
+      "display_name": "DevOps",
+      "persistence": "on-demand",
+      "default_tier": "T1"
+    },
+    {
+      "role": "customer-success",
+      "display_name": "Customer Success",
+      "persistence": "persistent",
+      "default_tier": "T1"
+    },
+    {
+      "role": "finance",
+      "display_name": "Finance",
+      "persistence": "when-required",
+      "default_tier": "T3"
+    },
+    {
+      "role": "marketing",
+      "display_name": "Marketing",
+      "persistence": "when-required",
+      "default_tier": "T2"
+    },
+    {
+      "role": "document-operations",
+      "display_name": "Document Operations",
+      "persistence": "when-required",
+      "default_tier": "T1"
+    }
+  ],
+  "companies": [
+    {
+      "id": "isc",
+      "official_name": "ISC",
+      "agents": [
+        {
+          "id": "isc.receptionist",
+          "display_name": "Receptionist"
+        },
+        {
+          "id": "isc.ceo",
+          "display_name": "CEO"
+        },
+        {
+          "id": "isc.delivery-director",
+          "display_name": "Delivery Director"
+        },
+        {
+          "id": "isc.engineering-director",
+          "display_name": "Engineering Director"
+        },
+        {
+          "id": "isc.business-analyst",
+          "display_name": "Business Analyst/Sales"
+        },
+        {
+          "id": "isc.project-manager",
+          "display_name": "Project Manager"
+        },
+        {
+          "id": "isc.solution-architect",
+          "display_name": "Solution Architect"
+        },
+        {
+          "id": "isc.team-lead",
+          "display_name": "Team Lead"
+        },
+        {
+          "id": "isc.senior-developer",
+          "display_name": "Senior Developer"
+        },
+        {
+          "id": "isc.junior-developer",
+          "display_name": "Junior Developer"
+        },
+        {
+          "id": "isc.executor",
+          "display_name": "Executor"
+        },
+        {
+          "id": "isc.optimizer",
+          "display_name": "Optimizer"
+        },
+        {
+          "id": "isc.reviewer",
+          "display_name": "Reviewer"
+        },
+        {
+          "id": "isc.verifier",
+          "display_name": "Verifier"
+        },
+        {
+          "id": "isc.release-controller",
+          "display_name": "Release Controller"
+        },
+        {
+          "id": "isc.qa",
+          "display_name": "QA"
+        },
+        {
+          "id": "isc.security",
+          "display_name": "Security"
+        },
+        {
+          "id": "isc.devops",
+          "display_name": "DevOps"
+        },
+        {
+          "id": "isc.customer-success",
+          "display_name": "Customer Success"
+        },
+        {
+          "id": "isc.finance",
+          "display_name": "Finance"
+        },
+        {
+          "id": "isc.marketing",
+          "display_name": "Marketing"
+        },
+        {
+          "id": "isc.document-operations",
+          "display_name": "Document Operations"
+        }
+      ]
+    },
+    {
+      "id": "auvia",
+      "official_name": "AUVIA",
+      "agents": [
+        {
+          "id": "auvia.receptionist",
+          "display_name": "Receptionist"
+        },
+        {
+          "id": "auvia.ceo",
+          "display_name": "CEO"
+        },
+        {
+          "id": "auvia.delivery-director",
+          "display_name": "Delivery Director"
+        },
+        {
+          "id": "auvia.engineering-director",
+          "display_name": "Engineering Director"
+        },
+        {
+          "id": "auvia.business-analyst",
+          "display_name": "Business Analyst/Sales"
+        },
+        {
+          "id": "auvia.project-manager",
+          "display_name": "Project Manager"
+        },
+        {
+          "id": "auvia.solution-architect",
+          "display_name": "Solution Architect"
+        },
+        {
+          "id": "auvia.team-lead",
+          "display_name": "Team Lead"
+        },
+        {
+          "id": "auvia.senior-developer",
+          "display_name": "Senior Developer"
+        },
+        {
+          "id": "auvia.junior-developer",
+          "display_name": "Junior Developer"
+        },
+        {
+          "id": "auvia.executor",
+          "display_name": "Executor"
+        },
+        {
+          "id": "auvia.optimizer",
+          "display_name": "Optimizer"
+        },
+        {
+          "id": "auvia.reviewer",
+          "display_name": "Reviewer"
+        },
+        {
+          "id": "auvia.verifier",
+          "display_name": "Verifier"
+        },
+        {
+          "id": "auvia.release-controller",
+          "display_name": "Release Controller"
+        },
+        {
+          "id": "auvia.qa",
+          "display_name": "QA"
+        },
+        {
+          "id": "auvia.security",
+          "display_name": "Security"
+        },
+        {
+          "id": "auvia.devops",
+          "display_name": "DevOps"
+        },
+        {
+          "id": "auvia.customer-success",
+          "display_name": "Customer Success"
+        },
+        {
+          "id": "auvia.finance",
+          "display_name": "Finance"
+        },
+        {
+          "id": "auvia.marketing",
+          "display_name": "Marketing"
+        },
+        {
+          "id": "auvia.document-operations",
+          "display_name": "Document Operations"
+        }
+      ]
+    },
+    {
+      "id": "tabbeq-ai",
+      "official_name": "TabbeQ AI",
+      "agents": [
+        {
+          "id": "tabbeq-ai.receptionist",
+          "display_name": "Receptionist"
+        },
+        {
+          "id": "tabbeq-ai.ceo",
+          "display_name": "CEO"
+        },
+        {
+          "id": "tabbeq-ai.delivery-director",
+          "display_name": "Delivery Director"
+        },
+        {
+          "id": "tabbeq-ai.engineering-director",
+          "display_name": "Engineering Director"
+        },
+        {
+          "id": "tabbeq-ai.business-analyst",
+          "display_name": "Business Analyst/Sales"
+        },
+        {
+          "id": "tabbeq-ai.project-manager",
+          "display_name": "Project Manager"
+        },
+        {
+          "id": "tabbeq-ai.solution-architect",
+          "display_name": "Solution Architect"
+        },
+        {
+          "id": "tabbeq-ai.team-lead",
+          "display_name": "Team Lead"
+        },
+        {
+          "id": "tabbeq-ai.senior-developer",
+          "display_name": "Senior Developer"
+        },
+        {
+          "id": "tabbeq-ai.junior-developer",
+          "display_name": "Junior Developer"
+        },
+        {
+          "id": "tabbeq-ai.executor",
+          "display_name": "Executor"
+        },
+        {
+          "id": "tabbeq-ai.optimizer",
+          "display_name": "Optimizer"
+        },
+        {
+          "id": "tabbeq-ai.reviewer",
+          "display_name": "Reviewer"
+        },
+        {
+          "id": "tabbeq-ai.verifier",
+          "display_name": "Verifier"
+        },
+        {
+          "id": "tabbeq-ai.release-controller",
+          "display_name": "Release Controller"
+        },
+        {
+          "id": "tabbeq-ai.qa",
+          "display_name": "QA"
+        },
+        {
+          "id": "tabbeq-ai.security",
+          "display_name": "Security"
+        },
+        {
+          "id": "tabbeq-ai.devops",
+          "display_name": "DevOps"
+        },
+        {
+          "id": "tabbeq-ai.customer-success",
+          "display_name": "Customer Success"
+        },
+        {
+          "id": "tabbeq-ai.finance",
+          "display_name": "Finance"
+        },
+        {
+          "id": "tabbeq-ai.marketing",
+          "display_name": "Marketing"
+        },
+        {
+          "id": "tabbeq-ai.document-operations",
+          "display_name": "Document Operations"
+        }
+      ]
+    },
+    {
+      "id": "spectra",
+      "official_name": "Spectra",
+      "agents": [
+        {
+          "id": "spectra.receptionist",
+          "display_name": "Receptionist"
+        },
+        {
+          "id": "spectra.ceo",
+          "display_name": "CEO"
+        },
+        {
+          "id": "spectra.delivery-director",
+          "display_name": "Delivery Director"
+        },
+        {
+          "id": "spectra.engineering-director",
+          "display_name": "Engineering Director"
+        },
+        {
+          "id": "spectra.business-analyst",
+          "display_name": "Business Analyst/Sales"
+        },
+        {
+          "id": "spectra.project-manager",
+          "display_name": "Project Manager"
+        },
+        {
+          "id": "spectra.solution-architect",
+          "display_name": "Solution Architect"
+        },
+        {
+          "id": "spectra.team-lead",
+          "display_name": "Team Lead"
+        },
+        {
+          "id": "spectra.senior-developer",
+          "display_name": "Senior Developer"
+        },
+        {
+          "id": "spectra.junior-developer",
+          "display_name": "Junior Developer"
+        },
+        {
+          "id": "spectra.executor",
+          "display_name": "Executor"
+        },
+        {
+          "id": "spectra.optimizer",
+          "display_name": "Optimizer"
+        },
+        {
+          "id": "spectra.reviewer",
+          "display_name": "Reviewer"
+        },
+        {
+          "id": "spectra.verifier",
+          "display_name": "Verifier"
+        },
+        {
+          "id": "spectra.release-controller",
+          "display_name": "Release Controller"
+        },
+        {
+          "id": "spectra.qa",
+          "display_name": "QA"
+        },
+        {
+          "id": "spectra.security",
+          "display_name": "Security"
+        },
+        {
+          "id": "spectra.devops",
+          "display_name": "DevOps"
+        },
+        {
+          "id": "spectra.customer-success",
+          "display_name": "Customer Success"
+        },
+        {
+          "id": "spectra.finance",
+          "display_name": "Finance"
+        },
+        {
+          "id": "spectra.marketing",
+          "display_name": "Marketing"
+        },
+        {
+          "id": "spectra.document-operations",
+          "display_name": "Document Operations"
+        }
+      ]
+    },
+    {
+      "id": "spectra-solutions",
+      "official_name": "Spectra Solutions",
+      "agents": [
+        {
+          "id": "spectra-solutions.receptionist",
+          "display_name": "Receptionist"
+        },
+        {
+          "id": "spectra-solutions.ceo",
+          "display_name": "CEO"
+        },
+        {
+          "id": "spectra-solutions.delivery-director",
+          "display_name": "Delivery Director"
+        },
+        {
+          "id": "spectra-solutions.engineering-director",
+          "display_name": "Engineering Director"
+        },
+        {
+          "id": "spectra-solutions.business-analyst",
+          "display_name": "Business Analyst/Sales"
+        },
+        {
+          "id": "spectra-solutions.project-manager",
+          "display_name": "Project Manager"
+        },
+        {
+          "id": "spectra-solutions.solution-architect",
+          "display_name": "Solution Architect"
+        },
+        {
+          "id": "spectra-solutions.team-lead",
+          "display_name": "Team Lead"
+        },
+        {
+          "id": "spectra-solutions.senior-developer",
+          "display_name": "Senior Developer"
+        },
+        {
+          "id": "spectra-solutions.junior-developer",
+          "display_name": "Junior Developer"
+        },
+        {
+          "id": "spectra-solutions.executor",
+          "display_name": "Executor"
+        },
+        {
+          "id": "spectra-solutions.optimizer",
+          "display_name": "Optimizer"
+        },
+        {
+          "id": "spectra-solutions.reviewer",
+          "display_name": "Reviewer"
+        },
+        {
+          "id": "spectra-solutions.verifier",
+          "display_name": "Verifier"
+        },
+        {
+          "id": "spectra-solutions.release-controller",
+          "display_name": "Release Controller"
+        },
+        {
+          "id": "spectra-solutions.qa",
+          "display_name": "QA"
+        },
+        {
+          "id": "spectra-solutions.security",
+          "display_name": "Security"
+        },
+        {
+          "id": "spectra-solutions.devops",
+          "display_name": "DevOps"
+        },
+        {
+          "id": "spectra-solutions.customer-success",
+          "display_name": "Customer Success"
+        },
+        {
+          "id": "spectra-solutions.finance",
+          "display_name": "Finance"
+        },
+        {
+          "id": "spectra-solutions.marketing",
+          "display_name": "Marketing"
+        },
+        {
+          "id": "spectra-solutions.document-operations",
+          "display_name": "Document Operations"
+        }
+      ]
+    }
+  ],
+  "auvia_seed": [
+    {
+      "label": "MAK",
+      "department": "Management",
+      "proposed_role": "ceo",
+      "assigned_agent": "auvia.ceo",
+      "status": "PROPOSED"
+    },
+    {
+      "label": "HAK",
+      "department": "Management",
+      "proposed_role": "delivery-director",
+      "assigned_agent": "auvia.delivery-director",
+      "status": "PROPOSED"
+    },
+    {
+      "label": "HAY",
+      "department": "Management",
+      "proposed_role": "engineering-director",
+      "assigned_agent": "auvia.engineering-director",
+      "status": "PROPOSED"
+    },
+    {
+      "label": "MYA",
+      "department": "Software",
+      "proposed_role": "team-lead",
+      "assigned_agent": "auvia.team-lead",
+      "status": "PROPOSED"
+    },
+    {
+      "label": "ZMA",
+      "department": "AI",
+      "proposed_role": "team-lead",
+      "assigned_agent": "auvia.team-lead",
+      "status": "PROPOSED"
+    },
+    {
+      "label": "FIS",
+      "department": "People & Office Operations",
+      "proposed_role": "document-operations",
+      "assigned_agent": "auvia.document-operations",
+      "status": "PROPOSED"
+    },
+    {
+      "label": "AKA",
+      "department": "People & Office Operations",
+      "proposed_role": "customer-success",
+      "assigned_agent": "auvia.customer-success",
+      "status": "PROPOSED"
+    }
+  ],
+  "bots": [
+    {
+      "id": "bot.gateway",
+      "display_name": "Channel Gateway",
+      "tier": "T0"
+    },
+    {
+      "id": "bot.quota-ledger",
+      "display_name": "Quota Ledger",
+      "tier": "T0"
+    },
+    {
+      "id": "bot.spend-monitor",
+      "display_name": "Spend Anomaly Monitor",
+      "tier": "T0"
+    },
+    {
+      "id": "bot.emergency-stop",
+      "display_name": "Emergency Stop",
+      "tier": "T0"
+    },
+    {
+      "id": "bot.lease-manager",
+      "display_name": "Lease Manager",
+      "tier": "T0"
+    },
+    {
+      "id": "bot.watchdog",
+      "display_name": "Heartbeat Watchdog",
+      "tier": "T0"
+    },
+    {
+      "id": "bot.recovery",
+      "display_name": "Recovery Bot",
+      "tier": "T0"
+    },
+    {
+      "id": "bot.audit-sink",
+      "display_name": "Audit Sink",
+      "tier": "T0"
+    }
+  ],
+  "group_chats": [
+    {
+      "name": "Hermes Implementation",
+      "members": [
+        "owner",
+        "developer",
+        "federation.hermes-admin",
+        "federation.coo",
+        "federation.audit"
+      ]
+    },
+    {
+      "name": "Federation Ops",
+      "members": [
+        "federation.hermes-admin",
+        "federation.coo",
+        "federation.modelops",
+        "federation.finops",
+        "federation.infra-recovery",
+        "federation.security-policy"
+      ]
+    },
+    {
+      "name": "<company> Leadership",
+      "members": [
+        "<company>.ceo",
+        "<company>.delivery-director",
+        "<company>.engineering-director"
+      ],
+      "per": "company"
+    },
+    {
+      "name": "<project> Room",
+      "members": [
+        "customer",
+        "<company>.receptionist",
+        "<company>.customer-success",
+        "<company>.delivery-director"
+      ],
+      "per": "project"
+    }
+  ]
+}

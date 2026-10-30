@@ -1,0 +1,1023 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Federation Console</title>
+<style>
+:root {
+  --bg: #f4f6f9; --panel: #ffffff; --panel-2: #fafbfc; --ink: #1b1f24; --muted: #667080; --line: #e2e6eb;
+  --accent: #3b5bdb; --accent-hover: #3049b8; --accent-soft: #e8edff; --ok: #2b8a3e; --warn: #c27c0e; --bad: #c92a2a;
+  --chip: #eef1f5; --shadow: 0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.07);
+  --shadow-lg: 0 20px 48px rgba(16,24,40,.22); --ring: 0 0 0 3px rgba(59,91,219,.25);
+  --r-sm: 6px; --r: 9px; --r-lg: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e1116; --panel: #161a20; --panel-2: #1a1f26; --ink: #e6e9ee; --muted: #98a2af; --line: #272d36;
+    --accent: #7d95ff; --accent-hover: #93a7ff; --accent-soft: #1d2546; --ok: #51cf66; --warn: #fcc419; --bad: #ff6b6b;
+    --chip: #20262f; --shadow: 0 1px 2px rgba(0,0,0,.45); --shadow-lg: 0 20px 48px rgba(0,0,0,.6);
+    --ring: 0 0 0 3px rgba(125,149,255,.3);
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.5 "Segoe UI", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased; }
+* { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--line); border-radius: 10px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background-color: var(--muted); }
+
+/* ---------- controls */
+button { font: inherit; cursor: pointer; border-radius: var(--r); border: 1px solid var(--line); background: var(--panel);
+  color: var(--ink); padding: 7px 12px; white-space: nowrap; transition: border-color .12s, background .12s, box-shadow .12s; }
+button:hover { border-color: var(--accent); }
+button:active { transform: translateY(1px); }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+button.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+button:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+input, textarea, select { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--r); padding: 8px 10px; width: 100%; transition: border-color .12s, box-shadow .12s; }
+input:hover, textarea:hover, select:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
+textarea { resize: vertical; min-height: 84px; }
+:is(button, input, textarea, select, .tab, [tabindex]):focus-visible { outline: none; border-color: var(--accent); box-shadow: var(--ring); }
+input:disabled, select:disabled { background: var(--chip); color: var(--muted); }
+input[type=checkbox] { width: auto; accent-color: var(--accent); }
+select[multiple] { padding: 4px; }
+
+/* ---------- app frame: header row (wraps on narrow screens) + body */
+.app { display: grid; grid-template-rows: auto 1fr; height: 100vh; height: 100dvh; }
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 9px 18px; min-height: 56px;
+  background: var(--panel); border-bottom: 1px solid var(--line); box-shadow: var(--shadow); position: relative; z-index: 5; }
+header h1 { font-size: 16px; margin: 0; letter-spacing: .2px; white-space: nowrap; }
+header .group { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+header .sp { flex: 1; }
+header button { padding: 6px 11px; }
+header select { width: auto; max-width: 180px; padding: 5px 8px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: var(--chip);
+  color: var(--muted); font-size: 12px; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
+.dot.ok { background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 20%, transparent); }
+.dot.bad { background: var(--bad); }
+
+.body { display: grid; grid-template-columns: 280px 1fr; min-height: 0; }
+aside { border-right: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 12px 10px; }
+.co { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-radius: var(--r);
+  cursor: pointer; font-weight: 600; transition: background .12s; }
+.co:hover { background: var(--chip); }
+.co.active { background: var(--accent-soft); color: var(--accent); }
+.co small { color: var(--muted); font-weight: 400; }
+.agents { margin: 4px 0 10px 6px; border-left: 1px solid var(--line); padding-left: 6px; }
+.agent { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 5px 8px; border-radius: var(--r-sm); cursor: pointer; }
+.agent:hover { background: var(--chip); }
+.agent.active { background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--accent); }
+.agent span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.model { font-size: 11px; color: var(--muted); background: var(--chip); padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+
+main { display: grid; grid-template-rows: auto 1fr; min-height: 0; min-width: 0; }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 8px 18px; border-bottom: 1px solid var(--line);
+  background: var(--panel-2); }
+.tabbar { display: flex; gap: 2px; overflow-x: auto; min-width: 0; max-width: 100%; }
+.tab { border: 0; background: none; padding: 7px 12px; color: var(--muted); border-radius: var(--r); }
+.tab:hover { background: var(--chip); color: var(--ink); }
+.tab.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.tabs .sp { flex: 1; }
+.tab-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-left: auto; }
+.view { overflow: auto; padding: 16px 18px 28px; min-height: 0; }
+
+/* ---------- board */
+.cols { display: grid; grid-template-columns: repeat(6, minmax(170px, 1fr)); gap: 12px; align-items: start; min-width: 1050px; }
+.col { background: var(--chip); border-radius: var(--r-lg); padding: 8px; min-height: 120px; }
+.col h3 { margin: 2px 4px 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); display: flex; justify-content: space-between; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 9px 10px; margin-bottom: 8px;
+  cursor: pointer; box-shadow: var(--shadow); transition: border-color .12s, transform .12s; overflow-wrap: anywhere; }
+.card:hover { border-color: var(--accent); transform: translateY(-1px); }
+.card .t { font-weight: 600; margin-bottom: 4px; }
+.card .m { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; gap: 6px; flex-wrap: wrap; }
+.st-running .t::before { content: "● "; color: var(--warn); }
+.st-done .t::before { content: "✓ "; color: var(--ok); }
+.st-blocked .t::before { content: "■ "; color: var(--bad); }
+
+/* ---------- chat */
+.chat { display: grid; grid-template-rows: auto 1fr auto; height: 100%; max-width: 900px; margin: 0 auto; min-height: 0; }
+.chat-head { padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.chat-head .n { font-size: 16px; font-weight: 600; }
+.chat-head .d { color: var(--muted); font-size: 13px; }
+.msgs { overflow: auto; padding: 14px 2px; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+.msg { max-width: 78%; padding: 9px 12px; border-radius: 14px; white-space: pre-wrap; overflow-wrap: anywhere; box-shadow: var(--shadow); }
+.msg.user { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+.msg.agent { align-self: flex-start; background: var(--panel); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+.msg.err { border-color: var(--bad); }
+.msg.pending { color: var(--muted); font-style: italic; box-shadow: none; }
+.composer { display: flex; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); align-items: flex-end; }
+.composer textarea { min-height: 46px; height: 46px; max-height: 40vh; }
+.empty { color: var(--muted); text-align: center; padding: 60px 0; }
+
+/* ---------- side drawer (task details) */
+.drawer { position: fixed; inset: 0 0 0 auto; width: min(660px, 100vw); background: var(--panel); border-left: 1px solid var(--line);
+  box-shadow: var(--shadow-lg); padding: 20px 20px 40px; overflow: auto; overscroll-behavior: contain;
+  transform: translateX(105%); transition: transform .2s ease; z-index: 20; }
+.drawer.open { transform: none; }
+.drawer h2 { margin: 0 0 6px; font-size: 17px; overflow-wrap: anywhere; }
+.kv { display: grid; grid-template-columns: 120px 1fr; gap: 4px 10px; font-size: 13px; margin: 12px 0; }
+.kv div { overflow-wrap: anywhere; }
+.kv div:nth-child(odd) { color: var(--muted); }
+.box { background: var(--chip); border-radius: var(--r); padding: 10px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; margin: 6px 0 14px; }
+pre.box { font: 12px/1.45 Consolas, "Cascadia Mono", monospace; max-height: 420px; overflow: auto; }
+.label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin: 6px 0 4px; }
+
+/* ---------- dialogs: never taller than the screen; the dialog scrolls, title and buttons stay visible */
+.modal-bg { position: fixed; inset: 0; background: rgba(10,14,20,.5); backdrop-filter: blur(2px); display: none;
+  overflow-y: auto; overscroll-behavior: contain; padding: 24px 16px; z-index: 30; }
+.modal-bg.open { display: flex; }
+.modal { margin: auto; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--shadow-lg);
+  width: min(620px, 100%); max-height: calc(100vh - 48px); max-height: calc(100dvh - 48px); overflow-y: auto;
+  display: grid; gap: 10px; padding: 0 20px; animation: pop .14s ease-out; }
+.modal > h2 { position: sticky; top: 0; z-index: 1; margin: 0 -20px; padding: 16px 20px 12px; font-size: 17px;
+  background: var(--panel); border-bottom: 1px solid var(--line); }
+.modal > .actions { position: sticky; bottom: 0; z-index: 1; margin: 4px -20px 0; padding: 12px 20px;
+  background: var(--panel); border-top: 1px solid var(--line); }
+.modal textarea { min-height: 72px; }
+@keyframes pop { from { opacity: 0; transform: translateY(6px) scale(.99); } to { opacity: 1; transform: none; } }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 4px; }
+.toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%) translateY(8px); background: var(--ink); color: var(--panel);
+  padding: 10px 16px; border-radius: var(--r); font-size: 13px; opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none;
+  z-index: 40; max-width: min(80vw, 560px); box-shadow: var(--shadow-lg); }
+.toast.show { opacity: 1; transform: translateX(-50%); }
+
+/* ---------- memory, work orders, tasks */
+.mem-bar { display: grid; grid-template-columns: 230px 1fr 190px 150px auto; gap: 8px; margin-bottom: 12px; }
+.who { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 12px; font-size: 13px; }
+.scope { font: 11px Consolas, monospace; background: var(--chip); color: var(--muted); padding: 2px 6px; border-radius: 4px; }
+.scope.global { color: var(--ok); } .scope.admin { color: var(--bad); } .scope.entity { color: var(--accent); }
+.rec { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; margin-bottom: 8px;
+  cursor: pointer; box-shadow: var(--shadow); transition: border-color .12s; }
+.rec:hover { border-color: var(--accent); }
+.rec .t { font-weight: 600; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.rec .b { color: var(--muted); font-size: 13px; margin-top: 3px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.mem-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+.side-box { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 12px; margin-bottom: 12px; box-shadow: var(--shadow); }
+.side-box h3 { margin: 0 0 8px; font-size: 13px; }
+.audit-row { font-size: 12px; border-bottom: 1px solid var(--line); padding: 4px 0; overflow-wrap: anywhere; }
+.audit-row.denied { color: var(--bad); }
+.st { font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 999px; background: var(--chip); color: var(--muted); white-space: nowrap; }
+.st.RUNNING, .st.REWORK { color: var(--warn); } .st.SUCCEEDED { color: var(--ok); }
+.st.FAILED, .st.CANCELLED, .st.ESCALATING, .st.BLOCKED_EXTERNAL { color: var(--bad); } .st.REVIEWING, .st.READY { color: var(--accent); }
+.ev { font-size: 12px; border-left: 2px solid var(--line); padding: 2px 0 6px 10px; margin-left: 4px; }
+.ev b { font-weight: 600; }
+.stale { color: var(--bad); font-weight: 600; }
+
+/* ---------- map and models */
+.mapbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+.mapbar select, .mapbar input { width: auto; padding: 6px 8px; }
+.mapbar input[type=search] { min-width: 200px; }
+.legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; color: var(--muted); }
+.legend i, .sdot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
+.mapwrap { position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg);
+  height: calc(100dvh - 230px); min-height: 380px; overflow: hidden; }
+.mapwrap canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+.maptip { position: absolute; pointer-events: none; background: var(--ink); color: var(--panel); font-size: 12px; padding: 4px 8px; border-radius: 6px; display: none; white-space: nowrap; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+.tile { background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--muted); border-radius: var(--r); padding: 7px 9px; cursor: pointer; font-size: 12px; }
+.tile:hover { border-color: var(--accent); }
+.tile b { display: block; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tile.dim, .grp-row.dim { opacity: .25; }
+.grps { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; align-items: start; }
+.grp { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 10px; box-shadow: var(--shadow); }
+.grp h3 { margin: 0 0 6px; font-size: 14px; display: flex; justify-content: space-between; }
+.grp .dept { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin: 8px 0 2px; }
+.grp-row { display: flex; justify-content: space-between; gap: 6px; padding: 3px 4px; border-radius: 5px; cursor: pointer; font-size: 12px; }
+.grp-row:hover { background: var(--chip); }
+.mtable { width: 100%; border-collapse: collapse; font-size: 13px; }
+.mtable td, .mtable th { border-bottom: 1px solid var(--line); padding: 7px 6px; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.mtable th { color: var(--muted); font-weight: 600; font-size: 12px; }
+
+/* ---------- smaller screens */
+@media (max-width: 1200px) { .mem-bar { grid-template-columns: 1fr 1fr; } .mem-grid { grid-template-columns: 1fr; } }
+@media (max-width: 900px) {
+  .body { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  aside { max-height: 30vh; border-right: 0; border-bottom: 1px solid var(--line); }
+  .tabs { padding: 8px 12px; }
+  .view { padding: 12px; }
+  header { padding: 8px 12px; }
+  header .hide-sm { display: none; }
+}
+@media (max-width: 640px) {
+  .row, .mem-bar { grid-template-columns: 1fr; }
+  .kv { grid-template-columns: 1fr; }
+  .kv div:nth-child(odd) { margin-top: 6px; }
+  .msg { max-width: 92%; }
+  .modal-bg { padding: 0; }
+  .modal { max-height: 100dvh; border-radius: 0; min-height: 100dvh; width: 100%; }
+  .tab-actions { margin-left: 0; width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>☤ Federation Console</h1>
+    <div class="group">
+      <span class="pill"><span id="olDot" class="dot"></span><span id="olText">Ollama…</span></span>
+      <span class="pill" id="loaded">no model loaded</span>
+      <select id="olModel" title="Ollama model to load into memory"></select>
+      <button id="olLoad" title="Load the model into memory now and wait until it is ready, so the first chat does not wait">Load</button>
+    </div>
+    <span class="sp"></span>
+    <div class="group">
+      <span class="pill hide-sm" id="counts"></span>
+      <span class="pill hide-sm">Owner</span>
+      <button id="pilotBtn" title="G2-2 pilot: one synthetic agent run as the separate Windows account hermes-agent">Pilot</button>
+      <button id="adminBtn">Admin</button>
+      <button id="pwBtn">Change password</button>
+      <button id="outBtn">Sign out</button>
+    </div>
+  </header>
+  <div class="body">
+    <aside id="side"></aside>
+    <main>
+      <div class="tabs">
+        <nav class="tabbar">
+          <button class="tab" data-tab="ftasks">ISC tasks</button>
+          <button class="tab active" data-tab="board">Board</button>
+          <button class="tab" data-tab="chat">Chat</button>
+          <button class="tab" data-tab="memory">Memory</button>
+          <button class="tab" data-tab="workorders">Work orders</button>
+          <button class="tab" data-tab="map">Map</button>
+          <button class="tab" data-tab="models">Models</button>
+        </nav>
+        <div class="tab-actions">
+          <label class="pill"><input type="checkbox" id="auto" checked style="width:auto"> auto-refresh</label>
+          <button id="refresh">Refresh</button>
+          <button id="dispatch">Dispatch</button>
+          <button class="primary" id="newTask">+ New task</button>
+        </div>
+      </div>
+      <div class="view" id="view"></div>
+    </main>
+  </div>
+</div>
+
+<div class="drawer" id="drawer"></div>
+
+<div class="modal-bg" id="modal">
+  <form class="modal" id="taskForm">
+    <h2>New task on <span id="mBoard"></span></h2>
+    <input id="fTitle" placeholder="Title" required dir="auto">
+    <textarea id="fBody" placeholder="What should the agent do? Include acceptance criteria." dir="auto"></textarea>
+    <div class="row">
+      <div><div class="label">Assignee</div><select id="fAssignee"></select></div>
+      <div><div class="label">Depends on (parent)</div><select id="fParent"></select></div>
+    </div>
+    <div class="row">
+      <div><div class="label">Max runtime (s)</div><input id="fRuntime" type="number" value="1800" min="60"></div>
+      <div><div class="label">Workspace</div><input value="worktree (preserved, own branch)" disabled></div>
+    </div>
+    <div class="actions">
+      <button type="button" id="cancel">Cancel</button>
+      <label class="pill"><input type="checkbox" id="fDispatch" checked style="width:auto"> dispatch now</label>
+      <button class="primary" type="submit">Create</button>
+    </div>
+  </form>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const COLS = [["todo", ["triage","todo","scheduled"]], ["ready", ["ready"]], ["running", ["running"]],
+              ["review", ["review"]], ["blocked", ["blocked"]], ["done", ["done"]]];
+const S = { boards: {}, agents: [], board: "auvia", tab: "board", tasks: null, chatWith: null, chats: {}, openTask: null,
+            mem: { as: "owner", q: "", scope: "", kind: "", data: null, lessons: [], audit: [], customers: [] } };
+const KINDS = ["fact","decision","preference","procedure","lesson","verdict","owner_goal","spend_policy"];
+
+async function api(path, opts = {}) {
+  const r = await fetch(path, { headers: { "Content-Type": "application/json" }, ...opts });
+  if (r.status === 401 && !path.startsWith("/api/owner/")) { location.href = "/login"; throw new Error("signed out"); }
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+}
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 3500); }
+const agent = id => S.agents.find(a => a.id === id);
+const short = m => (m || "").replace(/^upstage\//, "");
+function ago(ts) { if (!ts) return ""; const s = Math.max(0, Date.now()/1000 - ts); return s < 60 ? `${s|0}s` : s < 3600 ? `${(s/60)|0}m` : `${(s/3600)|0}h`; }
+
+function renderSide() {
+  const html = Object.entries(S.boards).map(([slug, name]) => {
+    const list = S.agents.filter(a => a.board === slug);
+    const open = slug === S.board;
+    return `<div class="co ${open ? "active" : ""}" data-board="${slug}">${esc(name)} <small>${list.length}</small></div>` +
+      (open ? `<div class="agents">${list.map(a => `<div class="agent ${S.chatWith === a.id ? "active" : ""}" data-agent="${a.id}" title="${esc(a.description)}"><span>${esc(a.title)}</span><span class="model">${esc(short(a.model))}</span></div>`).join("")}</div>` : "");
+  }).join("");
+  $("#side").innerHTML = html;
+  $("#counts").textContent = `${S.agents.length} agents · ${Object.keys(S.boards).length} boards`;
+}
+
+function renderBoard() {
+  if (S.tasks === null) { $("#view").innerHTML = `<div class="empty">Loading ${esc(S.boards[S.board])}…</div>`; return; }
+  if (!S.tasks.length) { $("#view").innerHTML = `<div class="empty">No tasks on ${esc(S.boards[S.board])} yet. Create one with “+ New task”.</div>`; return; }
+  $("#view").innerHTML = `<div class="cols">${COLS.map(([label, sts]) => {
+    const items = S.tasks.filter(t => sts.includes(t.status));
+    return `<div class="col"><h3>${label}<span>${items.length}</span></h3>${items.map(t => {
+      const a = agent(t.assignee);
+      return `<div class="card st-${t.status}" data-task="${t.id}"><div class="t" dir="auto">${esc(t.title)}</div>
+        <div class="m"><span>${esc(a ? a.title : t.assignee || "unassigned")}</span><span>${esc(t.id)} · ${ago(t.completed_at || t.started_at || t.created_at)}</span></div></div>`;
+    }).join("")}</div>`;
+  }).join("")}</div>`;
+}
+
+function renderChat() {
+  const a = agent(S.chatWith);
+  if (!a) { $("#view").innerHTML = `<div class="empty">Pick an agent on the left to chat with it.</div>`; return; }
+  const msgs = S.chats[a.id] || [];
+  $("#view").innerHTML = `<div class="chat">
+    <div class="chat-head"><div class="n">${esc(a.title)} <span class="model">${esc(a.id)}</span></div>
+      <div class="d">${esc(a.section)} · ${esc(a.provider)}/${esc(short(a.model))}</div><div class="d" dir="auto">${esc(a.description)}</div></div>
+    <div class="msgs" id="msgs">${msgs.length ? msgs.map(m => `<div class="msg ${m.role} ${m.cls || ""}" dir="auto">${esc(m.text)}</div>`).join("") : `<div class="empty">Say hello to ${esc(a.title)}. Each message runs the agent with its own SOUL, tools and model.</div>`}</div>
+    <form class="composer" id="composer"><textarea id="say" placeholder="Message ${esc(a.title)}… (Enter to send, Shift+Enter for a new line)" dir="auto"></textarea><button class="primary">Send</button></form></div>`;
+  const box = $("#msgs"); box.scrollTop = box.scrollHeight;
+  $("#say").focus();
+}
+
+function scopeTag(sc) { return `<span class="scope ${esc(sc.split(":")[0])}">${esc(sc)}</span>`; }
+
+function renderMemory() {
+  const M = S.mem, d = M.data;
+  const opts = `<option value="owner">Owner (you): sees everything</option>` + Object.entries(S.boards).map(([slug, name]) =>
+    `<optgroup label="${esc(name)}">${S.agents.filter(a => a.board === slug).map(a => `<option value="${a.id}" ${M.as === a.id ? "selected" : ""}>${esc(a.title)}</option>`).join("")}</optgroup>`).join("");
+  const w = d && d.whoami;
+  const who = !w ? "" : `<div class="who"><b>${esc(w.display)}</b> <span class="pill">${esc(w.company)} · ${esc(w.department)} · level ${w.level}</span>
+     ${w.admin_groups_for_me.length ? `<span class="pill">admin: ${esc(w.admin_groups_for_me.join(", "))}</span>` : ""}
+     <span style="color:var(--muted)">can read:</span> ${Array.isArray(w.can_read) ? w.can_read.map(scopeTag).join(" ") : `<span class="scope global">${esc(w.can_read)}</span>`}</div>`;
+  const recs = !d ? `<div class="empty">Loading…</div>` : !d.records.length ? `<div class="empty">Nothing visible to this identity${M.q ? " for this search" : ""}.</div>` :
+    d.records.map(r => `<div class="rec" data-rec="${r.id}"><div class="t" dir="auto">#${r.id} ${esc(r.title)} ${scopeTag(r.scope)}
+      <span class="model">${esc(r.kind)}</span><span class="model">${esc(r.status)}</span>${r.revision > 1 ? `<span class="model">rev ${r.revision}</span>` : ""}</div>
+      <div class="b" dir="auto">${esc(r.body.slice(0, 240))}</div><div class="b">by ${esc(r.author)} · ${esc(r.created_at)}</div></div>`).join("");
+  const lessons = M.lessons.length ? M.lessons.map(l => `<div class="audit-row"><div dir="auto">#${l.id} <b>${esc(l.department)}</b> from ${esc(l.proposed_by)}</div>
+      <div dir="auto">${esc(l.text)}</div><div style="display:flex;gap:6px;margin-top:4px"><button data-lesson="${l.id}" data-act="approve">Approve</button><button data-lesson="${l.id}" data-act="reject">Reject</button></div></div>`).join("")
+    : `<div style="color:var(--muted);font-size:13px">No pending lessons.</div>`;
+  const audit = M.audit.slice(0, 40).map(a => `<div class="audit-row ${esc(a.result)}">${new Date(a.ts * 1000).toLocaleTimeString()} · <b>${esc(a.actor)}</b> ${esc(a.action)} ${esc(a.target)} · ${esc(a.result)}${a.detail ? " · " + esc(a.detail) : ""}</div>`).join("");
+  $("#view").innerHTML = `<form class="mem-bar" id="memForm">
+      <select id="mAs">${opts}</select>
+      <input id="mQ" placeholder="Search keywords" value="${esc(M.q)}" dir="auto">
+      <input id="mScope" placeholder="scope (e.g. entity:isc)" value="${esc(M.scope)}">
+      <select id="mKind"><option value="">any kind</option>${KINDS.map(k => `<option ${M.kind === k ? "selected" : ""}>${k}</option>`).join("")}</select>
+      <button class="primary">Search</button></form>
+    ${who}
+    <div class="mem-grid"><div>${recs}</div><div>
+      <div class="side-box"><h3>Customers <a href="/portal" target="_blank" style="font-weight:400;font-size:12px">open portal ↗</a></h3>
+        ${M.customers.length ? M.customers.map(c => `<div class="audit-row"><div dir="auto"><b>${esc(c.name)}</b> <span class="scope customer">${esc(c.id)}</span> ${esc(c.company)}</div>
+          <div dir="auto">${esc(c.channel)} ${esc(c.handle)} · ${esc(c.language)}${c.details ? " · " + esc(c.details) : ""}</div>
+          <div style="display:flex;gap:6px;margin-top:4px"><button data-code="${c.id}">${c.has_login ? "New login code" : "Issue login code"}</button>
+          <button data-cscope="${esc(c.company)}:${c.id}">Memory</button></div></div>`).join("") : `<div style="color:var(--muted);font-size:13px">No customers yet.</div>`}
+        <form id="newCustomer" style="display:grid;gap:6px;margin-top:8px">
+          <div class="row"><input id="cName" placeholder="Customer name" required dir="auto">
+            <select id="cCompany">${Object.entries(S.boards).filter(([k]) => k !== "federation").map(([k, n]) => `<option value="${k}">${esc(n)}</option>`).join("")}</select></div>
+          <div class="row"><select id="cChannel"><option>whatsapp</option><option>telegram</option><option>email</option><option>portal</option></select>
+            <input id="cHandle" placeholder="phone / username / email" dir="ltr"></div>
+          <div class="row"><select id="cLang"><option value="ar">Arabic</option><option value="en">English</option></select><span></span></div>
+          <textarea id="cDetails" placeholder="Important details (needs, preferences, constraints)" dir="auto" style="min-height:60px"></textarea>
+          <button class="primary">Add customer</button></form></div>
+      <div class="side-box"><h3>New record (as owner)</h3><form id="ownerWrite" style="display:grid;gap:6px">
+        <input id="wScope" placeholder="scope, e.g. entity:federation or admin:isc:executive" required>
+        <select id="wKind">${KINDS.filter(k => k !== "verdict").map(k => `<option>${k}</option>`).join("")}</select>
+        <input id="wTitle" placeholder="Title" required dir="auto"><textarea id="wBody" placeholder="Body" required dir="auto"></textarea>
+        <button class="primary">Save</button></form></div>
+      <div class="side-box"><h3>Pending lessons → global</h3>${lessons}</div>
+      <div class="side-box"><h3>Memory audit (latest)</h3><div style="max-height:360px;overflow:auto">${audit || "—"}</div></div>
+    </div></div>`;
+}
+
+async function loadMemory() {
+  const M = S.mem, qs = new URLSearchParams({ as: M.as, q: M.q, scope: M.scope, kind: M.kind });
+  try {
+    [M.data, M.lessons, M.audit, M.customers] = await Promise.all([api(`/api/memory?${qs}`), api("/api/memory/lessons"),
+      api("/api/memory/audit"), api("/api/memory/customers")]);
+  } catch (e) { M.data = { whoami: null, records: [] }; toast("Memory: " + e.message); }
+  if (S.tab === "memory") renderMemory();
+}
+
+async function openRecord(id) {
+  const d = $("#drawer"); d.classList.add("open"); d.innerHTML = `<div class="empty">Loading #${id}…</div>`;
+  try {
+    const j = await api(`/api/memory/records/${id}?as=${encodeURIComponent(S.mem.as)}`), r = j.record;
+    d.innerHTML = `<div style="display:flex;justify-content:space-between;gap:10px"><h2 dir="auto">#${r.id} ${esc(r.title)}</h2><button id="close">✕</button></div>
+      ${scopeTag(r.scope)} <span class="pill">${esc(r.kind)} · ${esc(r.status)} · ${esc(r.confidentiality)}</span>
+      <div class="kv"><div>Author</div><div>${esc(r.author)}</div><div>Revision</div><div>${r.revision}${r.superseded_by ? ` (superseded by #${r.superseded_by})` : ""}</div>
+        <div>Source</div><div>${esc(r.source || "—")}</div><div>Created</div><div>${esc(r.created_at)}</div>${r.change_reason ? `<div>Change reason</div><div dir="auto">${esc(r.change_reason)}</div>` : ""}</div>
+      <div class="label">Body</div><div class="box" dir="auto">${esc(r.body)}</div>
+      ${j.history.length ? `<div class="label">Earlier revisions</div>${j.history.map(h => `<div class="box" dir="auto">#${h.id} rev ${h.revision} by ${esc(h.author)}${h.change_reason ? " · " + esc(h.change_reason) : ""}\n${esc(h.body)}</div>`).join("")}` : ""}
+      ${S.mem.as === "owner" && !r.superseded_by ? `<div class="label">Override as owner</div><form id="ovForm" style="display:grid;gap:6px">
+        <textarea id="ovBody" dir="auto">${esc(r.body)}</textarea><input id="ovReason" placeholder="Reason (required)" required dir="auto"><button class="primary">Save new revision</button></form>` : ""}`;
+    $("#close").onclick = () => d.classList.remove("open");
+    const f = $("#ovForm"); if (f) f.onsubmit = async e => { e.preventDefault();
+      try { const o = await api("/api/memory/override", { method: "POST", body: JSON.stringify({ id: r.id, body: $("#ovBody").value, reason: $("#ovReason").value }) });
+        toast(`Saved revision ${o.revision} as #${o.id}`); d.classList.remove("open"); loadMemory(); } catch (err) { toast(err.message); } };
+  } catch (e) { d.innerHTML = `<button id="close">✕</button><p>${esc(e.message)}</p>`; $("#close").onclick = () => d.classList.remove("open"); }
+}
+
+const WO_COLS = ["draft", "requested", "accepted", "in_progress", "delivered", "revision_pending", "closed", "rejected", "cancelled"];
+async function loadWorkOrders() {
+  try { S.wos = await api("/api/workorders"); } catch (e) { S.wos = []; toast("Work orders: " + e.message); }
+  if (S.tab === "workorders") renderWorkOrders();
+}
+function renderWorkOrders() {
+  const list = S.wos;
+  if (!list) { $("#view").innerHTML = `<div class="empty">Loading work orders…</div>`; return; }
+  if (!list.length) { $("#view").innerHTML = `<div class="empty">No work orders yet. Agents create them with the work_order tool when one company needs another (R11.05).</div>`; return; }
+  $("#view").innerHTML = `<div class="cols" style="grid-template-columns:repeat(${WO_COLS.length}, minmax(170px,1fr))">${WO_COLS.map(st => {
+    const items = list.filter(w => w.status === st);
+    return `<div class="col"><h3>${st.replace("_", " ")}<span>${items.length}</span></h3>${items.map(w => `<div class="card" data-wo="${w.id}">
+      <div class="t" dir="auto">${esc(w.title)}</div><div class="m"><span>${esc(S.boards[w.lead_company] || w.lead_company)} → ${esc(S.boards[w.supplier_company] || w.supplier_company)}</span>
+      <span>${esc(w.id)} · rev ${w.requirements_revision}</span></div></div>`).join("")}</div>`;
+  }).join("")}</div>`;
+}
+async function openWorkOrder(id) {
+  const d = $("#drawer"); d.classList.add("open"); d.innerHTML = `<div class="empty">Loading ${esc(id)}…</div>`;
+  try {
+    const w = await api(`/api/workorders/${id}`);
+    d.innerHTML = `<div style="display:flex;justify-content:space-between;gap:10px"><h2 dir="auto">${esc(w.title)}</h2><button id="close">✕</button></div>
+      <span class="pill">${esc(w.status)} · requirements rev ${w.requirements_revision}</span>
+      <div class="kv"><div>Work order</div><div>${esc(w.id)}</div><div>Lead</div><div>${esc(S.boards[w.lead_company] || w.lead_company)} (accountable to the customer)</div>
+        <div>Supplier</div><div>${esc(S.boards[w.supplier_company] || w.supplier_company)}</div><div>Created by</div><div>${esc(w.created_by)} · ${esc(w.created_at)}</div>
+        <div>Supplier team</div><div>${esc(w.team.join(", ") || "—")}</div><div>Kanban task</div><div>${esc(w.kanban_task || "—")}</div>
+        <div>Customer</div><div>${esc(w.customer || "—")}</div><div>Project</div><div>${esc(w.project || "—")}</div><div>Shared scope</div><div>${scopeTag(w.shared_scope)}</div></div>
+      <div class="label">Scope</div><div class="box" dir="auto">${esc(w.work_scope)}</div>
+      <div class="label">Acceptance criteria</div><div class="box" dir="auto">${esc(w.acceptance_criteria)}</div>
+      <div class="label">Permitted data sharing</div><div class="box" dir="auto">${esc(w.permitted_sharing)}</div>
+      <div class="label">Granted records (supplier team reads only these, only while active)</div><div class="box">${w.granted_records.map(r => `#${r.id} ${esc(r.title)} · ${esc(r.scope)}`).join("\n") || "—"}</div>
+      <div class="label">Outputs · cost allocation</div><div class="box" dir="auto">${esc(w.outputs)}\n${esc(w.cost_allocation)}</div>
+      ${w.delivery ? `<div class="label">Delivery (answers requirements rev ${w.delivery_revision})</div><div class="box" dir="auto">${esc(w.delivery)}</div>` : ""}
+      <div class="label">History</div><div class="box">${w.events.map(e => `${esc(e.at)} · ${esc(e.by)} · ${esc(e.action)}${e.detail ? " · " + esc(e.detail) : ""}`).join("\n")}</div>`;
+    $("#close").onclick = () => d.classList.remove("open");
+  } catch (e) { d.innerHTML = `<button id="close">✕</button><p>${esc(e.message)}</p>`; $("#close").onclick = () => d.classList.remove("open"); }
+}
+
+// ---- ISC durable tasks (M1: R11.01-R11.03)
+const FT_GROUPS = [["Intake", ["NEW", "TRIAGE", "WAITING_CUSTOMER"]], ["Ready", ["READY", "WAITING_QUOTA"]],
+  ["Running", ["RUNNING", "REWORK"]], ["Attention", ["ESCALATING", "BLOCKED_EXTERNAL"]], ["Review", ["REVIEWING"]],
+  ["Closed", ["SUCCEEDED", "FAILED", "CANCELLED"]]];
+const REASON_NEEDED = ["CANCELLED", "FAILED", "WAITING_CUSTOMER", "BLOCKED_EXTERNAL", "REWORK"];
+async function loadFt() {
+  try { S.ft = (await api("/api/ftasks?company=isc")).tasks; } catch (e) { S.ft = []; toast(e.message); }
+  if (S.tab === "ftasks") renderFt();
+}
+function renderFt() {
+  const list = S.ft;
+  const head = `<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px"><b>ISC durable tasks</b>
+    <span class="pill">13 states · every change is an event</span><span class="sp" style="flex:1"></span>
+    <button id="ftSync">Sync now</button><button class="primary" id="ftNew">+ New ISC task</button></div>`;
+  if (!list) { $("#view").innerHTML = head + `<div class="empty">Loading…</div>`; bindFtHead(); return; }
+  $("#view").innerHTML = head + `<div class="cols">${FT_GROUPS.map(([g, sts]) => {
+    const items = list.filter(t => sts.includes(t.state));
+    return `<div class="col"><h3>${g}<span>${items.length}</span></h3>${items.map(t => `<div class="card" data-ft="${t.id}">
+      <div class="t" dir="auto">${esc(t.title)}</div><div class="m"><span class="st ${t.state}">${t.state}</span>
+      <span>${esc(t.id)} · v${t.state_version}${t.stale ? ' · <span class="stale">no heartbeat</span>' : ""}</span></div>
+      <div class="m"><span>${esc((agent(t.owner) || {}).title || t.owner)}</span><span>${esc(t.task_class)}</span></div></div>`).join("")}</div>`;
+  }).join("")}</div>`;
+  bindFtHead();
+}
+function bindFtHead() {
+  $("#ftNew").onclick = openFtModal;
+  $("#ftSync").onclick = async () => { try { const r = await api("/api/ftasks/sync", { method: "POST" }); toast(`Synced: ${r.changed.length} changed`); loadFt(); } catch (e) { toast(e.message); } };
+}
+function openFtModal() {
+  const isc = S.agents.filter(a => a.board === "isc");
+  const m = document.createElement("div"); m.className = "modal-bg open"; m.id = "ftModal";
+  m.innerHTML = `<form class="modal" id="ftForm"><h2>New ISC task (task contract, R11.01)</h2>
+    <input id="tTitle" placeholder="Title" required dir="auto">
+    <div class="row"><div><div class="label">Owner (accountable agent)</div><select id="tOwner">${isc.map(a => `<option value="${a.id}" ${a.id === "isc-junior-developer" ? "selected" : ""}>${esc(a.title)}</option>`).join("")}</select></div>
+      <div><div class="label">Class</div><select id="tClass"><option>code</option><option>docs</option><option>analysis</option><option>ops</option><option>design</option></select></div></div>
+    <div class="label">Input contract: what the worker gets</div><textarea id="tIn" required dir="auto"></textarea>
+    <div class="label">Output contract: what it must hand back</div><textarea id="tOut" required dir="auto" style="min-height:60px"></textarea>
+    <div class="label">Acceptance criteria</div><textarea id="tAcc" required dir="auto" style="min-height:60px"></textarea>
+    <div class="label">Test command (required for code: the review gate runs it on the exact commit)</div><input id="tTest" placeholder="python -m unittest test_greet">
+    <div class="row"><div><div class="label">Data restrictions</div><input id="tData" placeholder="e.g. no customer data" dir="auto"></div>
+      <div><div class="label">Allowed tools</div><input id="tTools" placeholder="e.g. terminal, file, git"></div></div>
+    <div class="row"><div><div class="label">Project (optional)</div><input id="tProj"></div>
+      <div><div class="label">Depends on</div><select id="tDep" multiple size="3">${(S.ft || []).filter(t => !["FAILED", "CANCELLED"].includes(t.state)).map(t => `<option value="${t.id}">${esc(t.id)} · ${esc(t.title)}</option>`).join("")}</select></div></div>
+    <div class="actions"><button type="button" id="tCancel">Cancel</button><button class="primary">Create (state NEW)</button></div></form>`;
+  document.body.appendChild(m);
+  const key = "create-" + crypto.randomUUID();  // idempotency: a double click creates one task
+  $("#tCancel").onclick = () => m.remove();
+  $("#ftForm").onsubmit = async e => { e.preventDefault(); const b = e.submitter; b.disabled = true;
+    try {
+      const t = await api("/api/ftasks", { method: "POST", body: JSON.stringify({ company: "isc", title: $("#tTitle").value,
+        owner: $("#tOwner").value, task_class: $("#tClass").value, input_contract: $("#tIn").value, output_contract: $("#tOut").value,
+        acceptance_criteria: $("#tAcc").value, data_restrictions: $("#tData").value, allowed_tools: $("#tTools").value,
+        test_command: $("#tTest").value,
+        project: $("#tProj").value, dependencies: [...$("#tDep").selectedOptions].map(o => o.value), idempotency_key: key }) });
+      m.remove(); toast(`Created ${t.id}`); loadFt(); openFt(t.id);
+    } catch (err) { toast(err.message); } b.disabled = false; };
+}
+async function openFt(id) {
+  const d = $("#drawer"); d.classList.add("open"); d.innerHTML = `<div class="empty">Loading ${esc(id)}…</div>`;
+  try {
+    const t = await api(`/api/ftasks/${id}`);
+    const when = ts => ts ? new Date(ts * 1000).toLocaleString() : "—";
+    d.innerHTML = `<div style="display:flex;justify-content:space-between;gap:10px"><h2 dir="auto">${esc(t.title)}</h2><button id="close">✕</button></div>
+      <span class="st ${t.state}">${t.state}</span> <span class="pill">version ${t.state_version} · requirements rev ${t.requirements_revision}</span>
+      ${t.stale ? ' <span class="stale">RUNNING with no heartbeat for 10+ min</span>' : ""}
+      ${t.state_reason ? `<div class="box" dir="auto">${esc(t.state_reason)}</div>` : ""}
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin:10px 0">${t.allowed_next.map(s => `<button data-to="${s}" ${s === "SUCCEEDED" && !t.evidence.length ? "disabled title='needs evidence'" : ""}>→ ${s}</button>`).join("") || '<span class="pill">terminal or waiting on the worker</span>'}</div>
+      <div class="kv"><div>Task</div><div>${esc(t.id)}</div><div>Correlation</div><div>${esc(t.correlation_id)}</div>
+        <div>Company</div><div>${esc(t.company)}${t.project ? " · project " + esc(t.project) : ""}</div>
+        <div>Owner</div><div>${esc(t.owner)}</div><div>Class · stage</div><div>${esc(t.task_class)} · ${esc(t.stage)}</div>
+        <div>Kanban</div><div>${esc(t.kanban_task ? t.board + ":" + t.kanban_task : "—")}</div>
+        <div>Heartbeat</div><div>${when(t.last_heartbeat)}</div><div>Depends on</div><div>${esc(t.dependencies.join(", ") || "—")}</div></div>
+      <div class="label">Input contract</div><div class="box" dir="auto">${esc(t.input_contract)}</div>
+      <div class="label">Output contract</div><div class="box" dir="auto">${esc(t.output_contract)}</div>
+      <div class="label">Acceptance criteria</div><div class="box" dir="auto">${esc(t.acceptance_criteria)}</div>
+      ${t.data_restrictions || t.allowed_tools ? `<div class="label">Restrictions · tools</div><div class="box" dir="auto">${esc(t.data_restrictions || "—")}\n${esc(t.allowed_tools || "—")}</div>` : ""}
+      <div class="label">Evidence</div><div class="box" dir="auto">${t.evidence.map(e => `${esc(e.kind)}: ${esc(e.ref)}`).join("\n\n") || "none yet"}</div>
+      ${["TRIAGE", "RUNNING", "REVIEWING", "REWORK", "ESCALATING", "BLOCKED_EXTERNAL"].includes(t.state) ? `<form id="evForm" style="display:grid;grid-template-columns:130px 1fr auto;gap:6px;margin-bottom:12px">
+        <select id="evKind"><option>verification</option><option>test-output</option><option>commit</option><option>artifact</option><option>note</option></select>
+        <input id="evRef" placeholder="What you checked and the result" required dir="auto"><button>Add evidence</button></form>` : ""}
+      ${t.state === "REVIEWING" ? `<div class="label">Review gate: still missing</div><div class="box">${t.gate.length ? t.gate.map(esc).join("\n") : "nothing: the gate will close the task"}</div>` : ""}
+      ${t.test_command ? `<div class="label">Test command</div><div class="box">${esc(t.test_command)}</div>` : ""}
+      <div class="label">Commit under review</div><div class="box">${esc(t.current_commit || "—")}${t.branch ? " · " + esc(t.branch) : ""}</div>
+      <div class="label">Tests and verdicts (R11.06)</div><div class="box" dir="auto">${t.reviews.map(r => `${esc(r.role)} ${esc(r.verdict.toUpperCase())} · ${esc(r.actor)} · ${esc(r.commit_sha.slice(0, 10))} · rev ${r.requirements_revision}${r.checked_review ? " · confirms " + esc(r.checked_review) : ""} · ${esc(r.id)}
+  ${esc(r.findings.slice(0, 400))}`).join("\n\n") || "none yet"}</div>
+      ${t.jobs.length ? `<div class="label">Review jobs</div><div class="box">${t.jobs.map(j => `${esc(j.role)} · ${esc(j.kanban_task)} · ${esc(j.commit_sha.slice(0, 10))} · ${esc(j.status)}`).join("\n")}</div>` : ""}
+      ${t.block_cause ? `<div class="label">Recovery</div><div class="box">${esc(t.block_cause)} · attempts ${t.recovery_attempts}${t.next_retry_at ? " · next try " + when(t.next_retry_at) : ""}</div>` : ""}
+      <div class="label">Usage and cost <button id="usageBtn" style="padding:2px 8px;font-size:12px">Show</button></div><div class="box" id="usageBox" style="display:none"></div>
+      <div class="label">Attempts (model · node)</div><div class="box">${t.attempts.map(a => `${esc(a.kanban_task)}#${a.run_id} ${esc(a.status)} · ${esc(a.profile)} · ${esc(a.model)} · ${esc(a.node)}${a.error ? "\n  " + esc(a.error.slice(0, 200)) : ""}`).join("\n") || "none yet"}</div>
+      <div class="label">Events (R11.03)</div>${t.events.map(e => `<div class="ev"><b>${esc(e.kind)}</b> ${e.from_state ? esc(e.from_state) + " → " : ""}${esc(e.to_state || "")} · v${e.state_version} · ${esc(e.actor)} · ${when(e.ts)}
+        ${e.detail ? `<div dir="auto" style="color:var(--muted)">${esc(e.detail)}</div>` : ""}<div style="color:var(--muted);font-size:11px">${esc(e.id)}</div></div>`).join("")}`;
+    $("#close").onclick = () => d.classList.remove("open");
+    $("#usageBtn").onclick = async () => { const B = $("#usageBox"); B.style.display = "block"; B.textContent = "Loading…";
+      try { const u = await api(`/api/ftasks/${id}/usage`), x = u.totals;
+        B.textContent = `sessions ${x.sessions} (worker ${x.by_role.worker}, reviewer ${x.by_role.reviewer}, verifier ${x.by_role.verifier}) · worker runs ${x.worker_runs} · retries ${x.retries}
+` +
+          `tokens in ${x.input_tokens ?? "unknown"} · out ${x.output_tokens ?? "unknown"} · API calls ${x.api_calls ?? "unknown"} · sessions without token data ${x.sessions_without_token_data}
+` +
+          `provider-reported cost ${x.provider_cost_usd == null ? "none" : "$" + x.provider_cost_usd} · Hermes estimate ${x.estimated_cost_usd == null ? "none" : "$" + x.estimated_cost_usd}
+` +
+          `local sessions ${x.local_sessions} · local wall time ${x.local_wall_seconds}s · local operational cost ${x.local_operational_cost ?? "not estimated"} (${x.local_operational_cost_source})
+` +
+          (Object.keys(x.failures).length ? "failures " + JSON.stringify(x.failures) + "\n" : "") + x.note +
+          "\n\n" + u.rows.map(r => `${r.role} · ${r.session_id} · ${r.model} · ${r.is_local ? "local" : r.provider} · in ${r.input_tokens ?? "?"} out ${r.output_tokens ?? "?"} · ${r.outcome}${r.failure_category ? " (" + r.failure_category + ")" : ""}`).join("\n");
+      } catch (e) { B.textContent = e.message; } };
+    const evf = $("#evForm"); if (evf) evf.onsubmit = async e => { e.preventDefault();
+      try { await api(`/api/ftasks/${id}/evidence`, { method: "POST", body: JSON.stringify({ kind: $("#evKind").value, ref: $("#evRef").value }) });
+        toast("Evidence added"); openFt(id); } catch (err) { toast(err.message); } };
+    d.querySelectorAll("[data-to]").forEach(b => b.onclick = async () => {
+      const to = b.dataset.to; let reason = "";
+      if (REASON_NEEDED.includes(to) || (to === "READY" && ["ESCALATING", "BLOCKED_EXTERNAL"].includes(t.state))) {
+        reason = prompt(`Reason for ${to}:`) || ""; if (!reason) return; }
+      b.disabled = true;
+      try { await api(`/api/ftasks/${id}/transition`, { method: "POST", body: JSON.stringify({ to, reason, expected_version: t.state_version, idempotency_key: `${id}-v${t.state_version}-${to}` }) });
+        toast(`${id} → ${to}`); loadFt(); openFt(id); }
+      catch (err) { toast(err.message); b.disabled = false; }
+    });
+  } catch (e) { d.innerHTML = `<button id="close">✕</button><p>${esc(e.message)}</p>`; $("#close").onclick = () => d.classList.remove("open"); }
+}
+
+function render() { renderSide();
+  // Map and Models live in their own script: if it failed to load, say so and keep the rest working.
+  if (S.tab === "map" || S.tab === "models") { const f = window[S.tab === "map" ? "renderMap" : "renderModels"];
+    try { f ? f() : ($("#view").innerHTML = `<div class="empty">This view is unavailable.</div>`); } catch (e) { $("#view").innerHTML = `<div class="empty">This view failed: ${esc(e.message)}</div>`; } }
+  else S.tab === "board" ? renderBoard() : S.tab === "chat" ? renderChat() : S.tab === "memory" ? renderMemory() : S.tab === "ftasks" ? renderFt() : renderWorkOrders();
+  ["#dispatch", "#newTask"].forEach(b => $(b).style.display = S.tab === "board" ? "" : "none");
+  document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b.dataset.tab === S.tab)); }
+
+async function loadTasks() {
+  try { S.tasks = await api(`/api/boards/${S.board}/tasks`); if (S.tab === "board") renderBoard(); }
+  catch (e) { toast("Board: " + e.message); }
+}
+async function loadStatus() {
+  try { const s = await api("/api/status");
+    $("#olDot").className = "dot " + (s.ollama ? "ok" : "bad"); $("#olText").textContent = s.ollama ? "Ollama up" : "Ollama down";
+    const busy = Object.entries(s.loading || {}).filter(([, v]) => "seconds_so_far" in v);
+    $("#loaded").textContent = busy.length ? busy.map(([m, v]) => `loading ${m}… ${v.seconds_so_far}s`).join(", ")
+      : s.loaded.length ? "loaded: " + s.loaded.join(", ") : "no model loaded";
+    const sel = $("#olModel"), keep = sel.value;
+    const opts = (s.installed || []).map(m => `<option${m === keep ? " selected" : ""}>${esc(m)}</option>`).join("");
+    if (sel.innerHTML !== opts) sel.innerHTML = opts;
+    $("#olLoad").disabled = !s.ollama || !(s.installed || []).length || busy.length > 0;
+    for (const [m, v] of Object.entries(s.loading || {})) {
+      if (v.error && !S.loadNoted?.[m + v.error]) { (S.loadNoted ||= {})[m + v.error] = 1; toast(`Load ${m}: ${v.error}`); }
+      if ("seconds" in v && !S.loadNoted?.[m + v.seconds]) { (S.loadNoted ||= {})[m + v.seconds] = 1; toast(`${m} is ready (${v.seconds}s)`); }
+    }
+    if (busy.length) setTimeout(loadStatus, 2000);  // follow the load closely, then back to the normal 10 s refresh
+  } catch {}
+}
+$("#olLoad").onclick = async () => {
+  const model = $("#olModel").value;
+  if (!model) return;
+  try { await api("/api/models/ollama-load", { method: "POST", body: JSON.stringify({ model }) });
+    toast(`Loading ${model} into memory…`); setTimeout(loadStatus, 500);
+  } catch (e) { toast("Load: " + e.message); }
+};
+
+async function openTask(id) {
+  S.openTask = id; const d = $("#drawer"); d.classList.add("open");
+  d.innerHTML = `<div class="empty">Loading ${esc(id)}…</div>`;
+  try {
+    const j = await api(`/api/boards/${S.board}/tasks/${id}`); const t = j.task || j; const a = agent(t.assignee);
+    const runs = j.runs || [];
+    d.innerHTML = `<div style="display:flex;justify-content:space-between;gap:10px"><h2 dir="auto">${esc(t.title)}</h2><button id="close">✕</button></div>
+      <span class="pill">${esc(t.status)}</span>
+      <div class="kv"><div>Task</div><div>${esc(t.id)}</div><div>Assignee</div><div>${esc(a ? `${a.title} (${a.id})` : t.assignee)}</div>
+        <div>Model</div><div>${esc(a ? `${a.provider}/${short(a.model)}` : "")}</div>
+        <div>Workspace</div><div>${esc(t.workspace_kind)} · ${esc(t.workspace_path || "")}</div><div>Branch</div><div>${esc(t.branch_name || "—")}</div></div>
+      <div class="label">Brief</div><div class="box" dir="auto">${esc(t.body || "—")}</div>
+      <div class="label">Result</div><div class="box" dir="auto">${esc(t.result || (t.status === "done" ? "—" : "not finished yet"))}</div>
+      ${runs.length ? `<div class="label">Runs</div><div class="box">${runs.map(r => `#${esc(r.attempt ?? r.id)} ${esc(r.outcome || r.status || "")} · ${esc(r.profile || "")}\n${esc(r.summary || "")}`).join("\n\n")}</div>` : ""}
+      <div style="display:flex;gap:8px"><button id="loadLog">Show worker log</button><button id="chatAssignee">Chat with assignee</button></div>
+      <pre class="box" id="log" style="display:none"></pre>`;
+    $("#close").onclick = () => { d.classList.remove("open"); S.openTask = null; };
+    $("#chatAssignee").onclick = () => { d.classList.remove("open"); S.chatWith = t.assignee; S.tab = "chat"; render(); };
+    $("#loadLog").onclick = async () => { const L = $("#log"); L.style.display = "block"; L.textContent = "Loading…";
+      try { L.textContent = (await api(`/api/boards/${S.board}/tasks/${id}/log`)).log || "(empty)"; L.scrollTop = L.scrollHeight; }
+      catch (e) { L.textContent = e.message; } };
+  } catch (e) { d.innerHTML = `<button id="close">✕</button><p>${esc(e.message)}</p>`; $("#close").onclick = () => d.classList.remove("open"); }
+}
+
+// Conversations live on the server: the browser sends only the new message, its id and the conversation id.
+S.convs = {};
+async function restoreChat(id) {
+  if (S.chats[id]) return;
+  S.chats[id] = [];
+  try {
+    const c = await api(`/api/conversations?agent=${encodeURIComponent(id)}`);
+    S.convs[id] = c.id;
+    S.chats[id] = c.messages.map(m => ({ role: m.role, text: m.text, cls: m.state === "failed" ? "err" : m.state === "pending" ? "pending" : "" }));
+  } catch (e) { toast("Conversation: " + e.message); }
+  if (S.tab === "chat" && S.chatWith === id) renderChat();
+}
+async function send(text, retryKey) {
+  const id = S.chatWith; const list = (S.chats[id] ||= []);
+  const key = retryKey || crypto.randomUUID();
+  list.push({ role: "user", text }); const wait = { role: "agent", text: "thinking… (local models can take a while on first load)", cls: "pending" };
+  list.push(wait); renderChat();
+  try { const r = await api("/api/chat", { method: "POST", body: JSON.stringify({ profile: id, message: text, message_id: key, conversation_id: S.convs[id] || null }) });
+    S.convs[id] = r.conversation_id;
+    Object.assign(wait, { text: r.reply || "(no reply)", cls: r.ok ? "" : "err" }); }
+  catch (e) { Object.assign(wait, { text: e.message, cls: "err" }); }
+  if (S.tab === "chat" && S.chatWith === id) renderChat();
+}
+async function openAdmin() {
+  const d = $("#drawer"); d.classList.add("open"); d.innerHTML = `<div class="empty">Checking health…</div>`;
+  try {
+    const [h, ss] = await Promise.all([api("/api/admin/health"), api("/api/admin/sessions")]);
+    const gw = Object.entries(h.model_gateway).map(([p, g]) => `${p}: ${g.status} (${g.class}) · ${g.detail}`).join("\n");
+    const st = Object.entries(h.stores).map(([k, v]) => `${k}: ${v}`).join("\n");
+    const t = h.tasks;
+    d.innerHTML = `<div style="display:flex;justify-content:space-between;gap:10px"><h2>Administration</h2><button id="close">✕</button></div>
+      <div class="label">Model gateway</div><div class="box">${esc(gw)}</div>
+      <div class="label">Stores (integrity quick check)</div><div class="box">${esc(st)}</div>
+      <div class="label">Tasks</div><div class="box">${esc(JSON.stringify(t.by_state))}
+temporary (gateway, retrying): ${esc(t.blocked_temporary.join(", ") || "none")}
+permanent / needs owner: ${esc(t.blocked_permanent.join(", ") || "none")}
+running without heartbeat: ${esc(t.running_without_heartbeat.join(", ") || "none")}
+failed: ${esc(t.failed.join(", ") || "none")}</div>
+      <div class="label">Agents and sync</div><div class="box">${h.agents.profiles} profiles · guard in ${h.agents.guard_installed} · memory tool in ${h.agents.memory_tool_installed}
+sync: ${h.sync.last_ok ? "last ok " + new Date(h.sync.last_ok * 1000).toLocaleTimeString() : "not yet"}${h.sync.last_error ? " · last error " + esc(h.sync.last_error) : ""}
+authorisation denials in the last 24 h: ${h.denials_24h ?? "unknown"}</div>
+      <div class="label">Sessions <button id="revokeOthers" style="padding:2px 8px;font-size:12px">Sign out all other owner sessions</button></div>
+      <div class="box">${ss.filter(x => x.state === "active").map(x => `${x.id} · ${x.kind} ${esc(x.principal)} · since ${new Date(x.created_at * 1000).toLocaleString()}${x.current ? " · this browser" : ` <button data-revoke="${x.id}" style="padding:1px 6px;font-size:11px">revoke</button>`}`).join("\n") || "none"}</div>`;
+    $("#close").onclick = () => d.classList.remove("open");
+    $("#revokeOthers").onclick = async () => { const r = await api("/api/admin/sessions/revoke", { method: "POST", body: JSON.stringify({ scope: "others" }) }); toast(`${r.revoked} session(s) revoked`); openAdmin(); };
+    d.querySelectorAll("[data-revoke]").forEach(b => b.onclick = async () => { const r = await api("/api/admin/sessions/revoke", { method: "POST", body: JSON.stringify({ id: b.dataset.revoke }) }); toast(`${r.revoked} session revoked`); openAdmin(); });
+  } catch (e) { d.innerHTML = `<button id="close">✕</button><p>${esc(e.message)}</p>`; $("#close").onclick = () => d.classList.remove("open"); }
+}
+
+// G2-2 pilot: the synthetic agent sbx-executor, run as the Windows account hermes-agent (not one of the live agents).
+// One turn per message, no history; the transcript lives only in this browser tab.
+const PILOT = [];
+async function openPilot() {
+  const d = $("#drawer"); d.classList.add("open"); d.innerHTML = `<div class="empty">Checking the pilot…</div>`;
+  try {
+    const p = await api("/api/pilot");
+    const last = p.last ? `last run ${new Date(p.last.at * 1000).toLocaleTimeString()} · ${p.last.ok ? "ok" : "failed"} · ${p.last.seconds}s` : "no run yet";
+    d.innerHTML = `<div style="display:flex;justify-content:space-between;gap:10px"><h2>Pilot · ${esc(p.profile)}</h2><button id="close">✕</button></div>
+      <div class="box">${p.available ? `runs as Windows account <b>${esc(p.identity)}</b> from C:\HermesFederation (OS-isolated from the live federation)
+${esc(last)}${p.busy ? " · answering now" : ""}` : `not available: ${esc(p.reason)}`}</div>
+      <div class="msgs" id="pilotMsgs" style="display:flex;flex-direction:column;gap:8px;margin:10px 0">${PILOT.map(m =>
+        `<div class="msg ${m.cls}" dir="auto">${esc(m.text)}</div>`).join("")}</div>
+      ${p.available ? `<form class="composer" id="pilotForm"><textarea id="pilotSay" placeholder="Message the pilot agent… (Enter to send, Shift+Enter for a new line)" dir="auto"></textarea><button class="primary">Send</button></form>` : ""}`;
+    $("#close").onclick = () => d.classList.remove("open");
+    const f = $("#pilotForm"); if (!f) return;
+    const say = $("#pilotSay");
+    say.onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); f.requestSubmit(); } };
+    f.onsubmit = async e => {
+      e.preventDefault();
+      const text = say.value.trim(); if (!text) return;
+      PILOT.push({ cls: "user", text }); const wait = { cls: "agent pending", text: "hermes-agent is thinking…" }; PILOT.push(wait);
+      openPilot();
+      try { const r = await api("/api/pilot/chat", { method: "POST", body: JSON.stringify({ message: text }) });
+            Object.assign(wait, { cls: r.ok ? "agent" : "agent err", text: r.reply + `
+— ${r.identity} · ${r.seconds}s` }); }
+      catch (err) { Object.assign(wait, { cls: "agent err", text: err.message }); }
+      if ($("#drawer").classList.contains("open") && $("#pilotMsgs")) openPilot();
+    };
+    say.focus();
+  } catch (e) { d.innerHTML = `<button id="close">✕</button><p>${esc(e.message)}</p>`; $("#close").onclick = () => d.classList.remove("open"); }
+}
+
+function openModal() {
+  $("#mBoard").textContent = S.boards[S.board];
+  $("#fAssignee").innerHTML = S.agents.filter(a => a.board === S.board).map(a => `<option value="${a.id}">${esc(a.title)}</option>`).join("");
+  $("#fParent").innerHTML = `<option value="">— none —</option>` + (S.tasks || []).filter(t => t.status !== "archived").map(t => `<option value="${t.id}">${esc(t.id)} · ${esc(t.title)}</option>`).join("");
+  $("#modal").classList.add("open"); $("#fTitle").focus();
+}
+
+document.addEventListener("click", e => {
+  const co = e.target.closest("[data-board]"); if (co) { S.board = co.dataset.board; S.tasks = null; render(); loadTasks(); return; }
+  const ag = e.target.closest("[data-agent]"); if (ag) { S.chatWith = ag.dataset.agent; S.tab = "chat"; render(); restoreChat(ag.dataset.agent); return; }
+  const card = e.target.closest("[data-task]"); if (card) { openTask(card.dataset.task); return; }
+  const tab = e.target.closest(".tab"); if (tab) { S.tab = tab.dataset.tab; render(); if (S.tab === "memory") loadMemory();
+    if (S.tab === "workorders") loadWorkOrders(); if (S.tab === "ftasks") loadFt();
+    if (S.tab === "map" && window.loadMap) loadMap(); if (S.tab === "models" && window.loadModels) loadModels(); return; }
+  const ftc = e.target.closest("[data-ft]"); if (ftc) { openFt(ftc.dataset.ft); return; }
+  const woc = e.target.closest("[data-wo]"); if (woc) { openWorkOrder(woc.dataset.wo); return; }
+  const rec = e.target.closest("[data-rec]"); if (rec) { openRecord(rec.dataset.rec); return; }
+  const code = e.target.closest("[data-code]"); if (code) {
+    if (!confirm("Issue a new login code? Any earlier code for this customer stops working.")) return;
+    api("/api/memory/customers/login-code", { method: "POST", body: JSON.stringify({ id: code.dataset.code }) })
+      .then(r => { prompt("Login code for the customer (shown once, copy it now). Portal: " + location.origin + "/portal", r.code); loadMemory(); })
+      .catch(err => toast(err.message)); return; }
+  const cs = e.target.closest("[data-cscope]"); if (cs) {
+    Object.assign(S.mem, { as: "owner", q: "", kind: "", scope: "customer:" + cs.dataset.cscope, data: null });
+    renderMemory(); loadMemory(); return; }
+  const les = e.target.closest("[data-lesson]"); if (les) { const act = les.dataset.act;
+    const text = act === "approve" ? prompt("Sanitized text for global memory (no customer names or private data):",
+      S.mem.lessons.find(l => l.id == les.dataset.lesson)?.text || "") : null;
+    if (act === "approve" && text === null) return;
+    api("/api/memory/lessons", { method: "POST", body: JSON.stringify({ action: act, id: +les.dataset.lesson, sanitized_text: text }) })
+      .then(() => { toast(`Lesson ${act === "approve" ? "approved" : "rejected"}`); loadMemory(); }).catch(err => toast(err.message)); }
+});
+document.addEventListener("submit", e => {
+  if (e.target.id === "memForm") { e.preventDefault();
+    Object.assign(S.mem, { as: $("#mAs").value, q: $("#mQ").value.trim(), scope: $("#mScope").value.trim(), kind: $("#mKind").value, data: null });
+    renderMemory(); loadMemory(); return; }
+  if (e.target.id === "newCustomer") { e.preventDefault();
+    api("/api/memory/customers", { method: "POST", body: JSON.stringify({ name: $("#cName").value, company: $("#cCompany").value,
+      channel: $("#cChannel").value, handle: $("#cHandle").value, language: $("#cLang").value, details: $("#cDetails").value }) })
+      .then(r => { toast(`Customer ${r.id} added to ${r.company}`); loadMemory(); }).catch(err => toast(err.message));
+    return; }
+  if (e.target.id === "ownerWrite") { e.preventDefault();
+    api("/api/memory/write", { method: "POST", body: JSON.stringify({ scope: $("#wScope").value.trim(), kind: $("#wKind").value,
+      title: $("#wTitle").value, body: $("#wBody").value }) }).then(r => { toast(`Saved #${r.id} in ${r.scope}`); loadMemory(); }).catch(err => toast(err.message));
+    return; }
+  if (e.target.id !== "composer") return; e.preventDefault();
+  const v = $("#say").value.trim(); if (v) send(v);
+});
+document.addEventListener("keydown", e => {
+  if (e.target.id === "say" && e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("#composer").requestSubmit(); }
+  if (e.key === "Escape") { $("#modal").classList.remove("open"); $("#drawer").classList.remove("open"); }
+});
+$("#newTask").onclick = openModal;
+$("#cancel").onclick = () => $("#modal").classList.remove("open");
+$("#refresh").onclick = () => { S.tab === "memory" ? loadMemory() : S.tab === "workorders" ? loadWorkOrders() : S.tab === "ftasks" ? loadFt() : loadTasks(); loadStatus(); };
+$("#adminBtn").onclick = openAdmin;
+$("#pilotBtn").onclick = openPilot;
+$("#outBtn").onclick = async () => { await api("/api/owner/logout", { method: "POST" }); location.href = "/login"; };
+$("#pwBtn").onclick = async () => {
+  const cur = prompt("Current password:"); if (!cur) return;
+  const nw = prompt("New password (at least 10 characters):"); if (!nw) return;
+  if (prompt("Repeat the new password:") !== nw) return toast("The passwords do not match");
+  try { await api("/api/owner/password", { method: "POST", body: JSON.stringify({ current: cur, new: nw }) }); toast("Password changed; other sessions signed out"); }
+  catch (e) { toast(e.message); } };
+$("#dispatch").onclick = async e => { e.target.disabled = true;
+  try { const r = await api(`/api/boards/${S.board}/dispatch`, { method: "POST" }); const m = r.output.match(/Spawned:\s+(\d+)/); toast(`Dispatched: ${m ? m[1] : 0} worker(s) started`); loadTasks(); }
+  catch (err) { toast(err.message); } e.target.disabled = false; };
+$("#taskForm").onsubmit = async e => { e.preventDefault(); const btn = e.submitter; btn.disabled = true;
+  try {
+    const t = await api("/api/tasks", { method: "POST", body: JSON.stringify({ board: S.board, title: $("#fTitle").value, body: $("#fBody").value,
+      assignee: $("#fAssignee").value, parent: $("#fParent").value, max_runtime: $("#fRuntime").value }) });
+    $("#modal").classList.remove("open"); $("#fTitle").value = ""; $("#fBody").value = ""; toast(`Created ${t.id}`);
+    if ($("#fDispatch").checked) await api(`/api/boards/${S.board}/dispatch`, { method: "POST" });
+    loadTasks();
+  } catch (err) { toast(err.message); } btn.disabled = false; };
+
+(async () => {
+  [S.boards, S.agents] = await Promise.all([api("/api/boards"), api("/api/agents")]);
+  render(); loadTasks(); loadStatus();
+  setInterval(() => { if ($("#auto").checked) { if (S.tab === "board") loadTasks(); if (S.tab === "ftasks") loadFt();
+    if (S.tab === "map" && window.loadMap) loadMap(true); loadStatus(); } }, 10000);
+})();
+</script>
+<script>
+// ---- Federation map (Phase 5.1). Read-only; statuses come from /api/viz, never from the browser.
+(() => {
+const COLORS = { live: "#2f9e44", idle: "#868e96", blocked: "#e8590c", failed: "#e03131", stale: "#f59f00", unknown: "#ced4da" };
+const LABELS = { live: "live (heartbeat < 10 min)", idle: "idle", blocked: "blocked", failed: "failed (24 h)", stale: "stale (no heartbeat)", unknown: "unknown (no record)" };
+const M = { data: null, view: "graph", q: "", company: "", status: "", sel: null, err: null, yaw: 0.6, pitch: 0.45, zoom: 1, pos: [], drawMs: null };
+function visible(n) {
+  const q = M.q.toLowerCase();
+  return (!M.company || n.company === M.company) && (!M.status || n.status === M.status) &&
+    (!q || [n.id, n.title, n.role, n.department].some(v => String(v || "").toLowerCase().includes(q)));
+}
+window.loadMap = async quiet => {
+  try { M.data = await api("/api/viz"); M.err = null; }
+  catch (e) { M.err = e.message; }
+  if (S.tab === "map") quiet && M.data && !M.err ? draw() : renderMap();
+};
+window.renderMap = () => {
+  const v = $("#view");
+  if (!M.data && !M.err) { v.innerHTML = `<div class="empty">Loading the federation map…</div>`; return; }
+  if (!M.data) { v.innerHTML = `<div class="empty">The map is unavailable (${esc(M.err)}). Every other tab keeps working.</div>`; return; }
+  const d = M.data, cos = d.companies;
+  const counts = Object.fromEntries(d.statuses.map(s => [s, d.agents.filter(n => n.status === s).length]));
+  v.innerHTML = `<div class="mapbar">
+      <select id="mvView"><option value="graph">2D graph</option><option value="grid">Grid</option><option value="company">By company</option><option value="3d">3D</option></select>
+      <input type="search" id="mvQ" placeholder="Search agent, role, department" value="${esc(M.q)}">
+      <select id="mvCo"><option value="">All companies</option>${cos.map(c => `<option value="${c.id}">${esc(c.name)} (${c.agents})</option>`).join("")}</select>
+      <select id="mvSt"><option value="">All statuses</option>${d.statuses.map(s => `<option value="${s}">${s} (${counts[s]})</option>`).join("")}</select>
+      <span class="pill" id="mvPerf"></span>
+    </div>
+    <div class="legend" style="margin-bottom:8px">${d.statuses.map(s => `<span><i style="background:${COLORS[s]}"></i>${LABELS[s]}</span>`).join("")}
+      <span>· ${d.agents.length} agents · ${d.edges.length} escalation lines${M.err ? ` · refresh failed: ${esc(M.err)}` : ""}</span></div>
+    <div id="mvBody"></div>`;
+  $("#mvView").value = M.view; $("#mvCo").value = M.company; $("#mvSt").value = M.status;
+  $("#mvView").onchange = e => { M.view = e.target.value; renderMap(); };
+  $("#mvQ").oninput = e => { M.q = e.target.value; draw(); };
+  $("#mvCo").onchange = e => { M.company = e.target.value; draw(); };
+  $("#mvSt").onchange = e => { M.status = e.target.value; draw(); };
+  const body = $("#mvBody");
+  if (M.view === "graph" || M.view === "3d") {
+    body.innerHTML = `<div class="mapwrap"><canvas id="mvCanvas"></canvas><div class="maptip" id="mvTip"></div></div>`;
+    bindCanvas($("#mvCanvas"));
+  }
+  draw();
+};
+function perf(ms) { const p = $("#mvPerf"); M.drawMs = ms;
+  if (p) p.textContent = `server ${M.data.build_ms} ms · drawn in ${ms.toFixed(1)} ms · ${new Date(M.data.generated_at * 1000).toLocaleTimeString()}`; }
+function draw() {
+  if (S.tab !== "map" || !M.data) return;
+  const t0 = performance.now(), body = $("#mvBody"); if (!body) return;
+  if (M.view === "grid") {
+    body.innerHTML = `<div class="tiles">${M.data.agents.map(n => `<div class="tile ${visible(n) ? "" : "dim"}" data-mapnode="${n.id}" style="border-left-color:${COLORS[n.status]}">
+      <b title="${esc(n.title)}">${esc(n.title)}</b>${esc(n.company)} · ${esc(n.role)}<br><span class="sdot" style="background:${COLORS[n.status]}"></span>${esc(n.status)}${n.open_tasks ? ` · ${n.open_tasks} open` : ""}</div>`).join("")}</div>`;
+  } else if (M.view === "company") {
+    body.innerHTML = `<div class="grps">${M.data.companies.map(c => { const ns = M.data.agents.filter(n => n.company === c.id);
+      const depts = [...new Set(ns.map(n => n.department || "—"))];
+      return `<div class="grp"><h3>${esc(c.name)} <small>${Object.entries(c.status).filter(([, k]) => k).map(([s, k]) => `<span class="sdot" style="background:${COLORS[s]}"></span>${k}`).join(" ")}</small></h3>
+        ${depts.map(dp => `<div class="dept">${esc(dp)}</div>` + ns.filter(n => (n.department || "—") === dp).sort((a, b) => (b.level || 0) - (a.level || 0)).map(n =>
+          `<div class="grp-row ${visible(n) ? "" : "dim"}" data-mapnode="${n.id}"><span><span class="sdot" style="background:${COLORS[n.status]}"></span>${esc(n.title)}</span><small>${n.level ?? ""}</small></div>`).join("")).join("")}</div>`; }).join("")}</div>`;
+  } else paint();
+  perf(performance.now() - t0);
+}
+// Layout: the federation in the centre, each company a hub on a circle with its agents around it.
+function layout(w, h) {
+  const nodes = M.data.agents, cos = M.data.companies.map(c => c.id).filter(c => c !== "federation");
+  const R = Math.min(w, h) * 0.33, r = Math.min(w, h) * 0.12, out = {};
+  const hubs = { federation: [0, 0] };
+  cos.forEach((c, i) => { const a = -Math.PI / 2 + i * 2 * Math.PI / cos.length; hubs[c] = [Math.cos(a) * R, Math.sin(a) * R]; });
+  for (const c of Object.keys(hubs)) {
+    const ns = nodes.filter(n => n.company === c).sort((a, b) => (b.level || 0) - (a.level || 0));
+    ns.forEach((n, i) => { const a = i * 2 * Math.PI / ns.length, rr = c === "federation" ? r * 0.8 : r;
+      out[n.id] = { x: hubs[c][0] + Math.cos(a) * rr, y: hubs[c][1] + Math.sin(a) * rr, z: ((n.level || 20) - 50) * 1.6, n }; });
+  }
+  return { hubs, pts: out };
+}
+function project(p, w, h) {
+  if (M.view !== "3d") return { x: w / 2 + p.x * M.zoom, y: h / 2 + p.y * M.zoom, s: 1, d: 0 };
+  const cy = Math.cos(M.yaw), sy = Math.sin(M.yaw), cp = Math.cos(M.pitch), sp = Math.sin(M.pitch);
+  const x1 = p.x * cy - p.y * sy, z1 = p.x * sy + p.y * cy;      // the company plane, rotated
+  const y2 = -p.z * cp - z1 * sp, d = -p.z * sp + z1 * cp;        // level is height
+  const f = 900 / (900 + d);
+  return { x: w / 2 + x1 * f * M.zoom, y: h / 2 + y2 * f * M.zoom, s: f, d };
+}
+function paint() {
+  const c = $("#mvCanvas"); if (!c) return;
+  const dpr = window.devicePixelRatio || 1, w = c.clientWidth, h = c.clientHeight;
+  if (c.width !== w * dpr || c.height !== h * dpr) { c.width = w * dpr; c.height = h * dpr; }
+  const g = c.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  const css = getComputedStyle(document.documentElement), ink = css.getPropertyValue("--ink").trim(), line = css.getPropertyValue("--line").trim(), muted = css.getPropertyValue("--muted").trim();
+  const { hubs, pts } = layout(w, h), P = {};
+  for (const id in pts) P[id] = { ...project(pts[id], w, h), n: pts[id].n };
+  g.lineWidth = 1;
+  for (const e of M.data.edges) { const a = P[e.from], b = P[e.to]; if (!a || !b) continue;
+    const on = visible(a.n) || visible(b.n), hl = M.sel && (e.from === M.sel || e.to === M.sel);
+    g.strokeStyle = hl ? css.getPropertyValue("--accent").trim() : line; g.globalAlpha = hl ? 0.95 : on ? 0.55 : 0.12;
+    g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke(); }
+  g.globalAlpha = 1; g.font = "12px Segoe UI, system-ui, sans-serif"; g.textAlign = "center"; g.fillStyle = muted;
+  for (const co of M.data.companies) { const hb = hubs[co.id]; if (!hb) continue;
+    const p = project({ x: hb[0], y: hb[1], z: M.view === "3d" ? -60 : 0 }, w, h); g.fillText(co.name, p.x, p.y + 4); }
+  const order = Object.values(P).sort((a, b) => b.d - a.d);
+  M.pos = [];
+  for (const p of order) { const on = visible(p.n), rad = Math.max(3, 6 * p.s) * (p.n.id === M.sel ? 1.6 : 1);
+    g.globalAlpha = on ? 1 : 0.15; g.fillStyle = COLORS[p.n.status]; g.beginPath(); g.arc(p.x, p.y, rad, 0, 7); g.fill();
+    if (p.n.id === M.sel) { g.strokeStyle = ink; g.lineWidth = 2; g.stroke(); g.lineWidth = 1; }
+    if (on) M.pos.push({ x: p.x, y: p.y, r: rad + 3, n: p.n }); }
+  g.globalAlpha = 1;
+}
+function hit(c, ev) { const b = c.getBoundingClientRect(), x = ev.clientX - b.left, y = ev.clientY - b.top;
+  let best = null, bd = 1e9; for (const p of M.pos) { const d = Math.hypot(p.x - x, p.y - y); if (d < p.r && d < bd) { bd = d; best = p; } }
+  return { best, x, y }; }
+function bindCanvas(c) {
+  let drag = null;
+  c.onpointerdown = ev => { drag = { x: ev.clientX, y: ev.clientY, moved: false }; c.setPointerCapture(ev.pointerId); };
+  c.onpointermove = ev => {
+    if (drag) { const dx = ev.clientX - drag.x, dy = ev.clientY - drag.y; if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
+      if (M.view === "3d" && drag.moved) { M.yaw += dx * 0.008; M.pitch = Math.max(-1.4, Math.min(1.4, M.pitch + dy * 0.008)); drag.x = ev.clientX; drag.y = ev.clientY; draw(); }
+      return; }
+    const { best, x, y } = hit(c, ev), tip = $("#mvTip"); if (!tip) return;
+    if (best) { tip.style.display = "block"; tip.style.left = (x + 12) + "px"; tip.style.top = (y + 8) + "px"; tip.textContent = `${best.n.title} · ${best.n.status}`; c.style.cursor = "pointer"; }
+    else { tip.style.display = "none"; c.style.cursor = M.view === "3d" ? "grab" : "default"; } };
+  c.onpointerup = ev => { const moved = drag && drag.moved; drag = null; if (moved) return;
+    const { best } = hit(c, ev); if (best) openNode(best.n.id); else { M.sel = null; draw(); } };
+  c.onwheel = ev => { ev.preventDefault(); M.zoom = Math.max(0.4, Math.min(3, M.zoom * (ev.deltaY < 0 ? 1.1 : 0.9))); draw(); };
+}
+function openNode(id) {
+  const n = M.data.agents.find(a => a.id === id); if (!n) return; M.sel = id; draw();
+  const ups = M.data.edges.filter(e => e.from === id).map(e => e.to), downs = M.data.edges.filter(e => e.to === id).map(e => e.from);
+  const d = $("#drawer"); d.classList.add("open");
+  d.innerHTML = `<div style="display:flex;justify-content:space-between;gap:10px"><h2>${esc(n.title)}</h2><button id="close">✕</button></div>
+    <span class="pill"><span class="sdot" style="background:${COLORS[n.status]}"></span>${esc(n.status)}</span> <span class="pill">${esc(n.reason)}</span>
+    <div class="kv"><div>Agent</div><div>${esc(n.id)}</div><div>Company</div><div>${esc(n.company)}</div><div>Role</div><div>${esc(n.role)}</div>
+      <div>Department</div><div>${esc(n.department || "—")}</div><div>Level</div><div>${esc(n.level ?? "—")}</div>
+      <div>Model</div><div>${esc(n.provider)}/${esc(n.model)}</div><div>Open Kanban tasks</div><div>${n.open_tasks}</div>
+      <div>Runs recorded</div><div>${n.runs}</div><div>Federation tasks</div><div>${n.federation_tasks}</div>
+      <div>Last activity</div><div>${n.last_activity ? new Date(n.last_activity * 1000).toLocaleString() : "never recorded"}</div>
+      <div>Escalates to</div><div>${ups.map(u => `<a href="#" data-mapnode="${u}">${esc(u)}</a>`).join(", ") || "—"}</div>
+      <div>Escalated to by</div><div>${downs.map(u => `<a href="#" data-mapnode="${u}">${esc(u)}</a>`).join(", ") || "—"}</div></div>
+    ${n.recent.length ? `<div class="label">Recent runs</div><div class="box">${n.recent.map(r => `${r.at ? new Date(r.at * 1000).toLocaleString() : ""} · ${esc(r.status)} · ${esc(r.board)} ${esc(r.task || "")}\n${esc(r.title)}`).join("\n\n")}</div>` : ""}
+    <div style="display:flex;gap:8px"><button id="mvChat">Chat with this agent</button></div>`;
+  $("#close").onclick = () => { d.classList.remove("open"); M.sel = null; draw(); };
+  $("#mvChat").onclick = () => { d.classList.remove("open"); S.chatWith = id; S.tab = "chat"; render(); restoreChat(id); };
+}
+document.addEventListener("click", e => { const t = e.target.closest("[data-mapnode]"); if (t && S.tab === "map") { e.preventDefault(); openNode(t.dataset.mapnode); } });
+window.addEventListener("resize", () => { if (S.tab === "map") draw(); });
+})();
+</script>
+<script>
+// ---- Model management (Phase 5.2). Keys are typed, sent once, never stored in the browser.
+(() => {
+const MM = { info: null, err: null, plan: null, last: null };
+window.loadModels = async () => { try { MM.info = await api("/api/models"); MM.err = null; } catch (e) { MM.err = e.message; } if (S.tab === "models") renderModels(); };
+function testText(r) { if (!r) return "";
+  const lines = [`status: ${r.status}${r.ms != null ? ` (${r.ms} ms)` : ""}`]; if (r.detail) lines.push(r.detail);
+  if (r.installed) lines.push(`installed: ${r.installed.join(", ") || "none"}`, `loaded now: ${r.loaded.map(l => `${l.name}${l.context_length ? ` (ctx ${l.context_length})` : ""}`).join(", ") || "none"}`);
+  if (r.models) lines.push(`${r.models.length} model(s) offered: ${r.models.slice(0, 25).join(", ")}${r.models.length > 25 ? " …" : ""}`);
+  return lines.join("\n"); }
+window.renderModels = () => {
+  const v = $("#view");
+  if (!MM.info) { v.innerHTML = `<div class="empty">${MM.err ? "Model management is unavailable: " + esc(MM.err) : "Loading…"}</div>`; return; }
+  const I = MM.info, byAgent = {};
+  S.agents.forEach(a => { const k = `${a.provider}/${a.model}`; byAgent[k] = (byAgent[k] || 0) + 1; });
+  v.innerHTML = `<div class="mem-grid"><div>
+    <div class="side-box"><h3>Agents by model today</h3><div class="box">${Object.entries(byAgent).map(([k, n]) => `${esc(k)}: ${n} agent(s)`).join("\n")}</div></div>
+    <div class="side-box"><h3>Saved configurations</h3>
+      ${I.configs.length ? `<table class="mtable"><tr><th>Name</th><th>Provider / model</th><th>Key</th><th>Last test</th><th></th></tr>${I.configs.map(c => `<tr><td>${esc(c.name)}</td>
+        <td>${esc(c.provider)} / ${esc(c.model)}<br><small>${esc(c.base_url)}</small></td><td>${c.key_env ? (c.has_key ? "stored (hidden)" : "missing") : "not needed"}</td>
+        <td>${c.last_test ? esc(c.last_test.status) + " · " + new Date(c.last_test.at * 1000).toLocaleString() : "—"}</td>
+        <td><button data-mretest="${esc(c.name)}">Test</button></td></tr>`).join("")}</table>` : `<div class="empty" style="padding:16px">No saved configuration yet.</div>`}
+    </div>
+    <div class="side-box"><h3>Assign a configuration to agents</h3>
+      <div class="row"><select id="apName">${I.configs.map(c => `<option>${esc(c.name)}</option>`).join("")}</select>
+        <select id="apPurpose">${I.purposes.map(p => `<option>${p}</option>`).join("")}</select></div>
+      <div class="row" style="margin-top:8px"><select id="apCo"><option value="">every company</option>${I.companies.map(c => `<option>${c}</option>`).join("")}</select>
+        <button id="apPreview" ${I.configs.length ? "" : "disabled"}>Preview changes</button></div>
+      <div id="apOut"></div>
+      <p style="font-size:12px;color:var(--muted)">Only the agents of the chosen purpose (and company) change. A preview is required, then you confirm it. Every change is audited and each profile's config is backed up first.</p>
+    </div></div>
+    <div><div class="side-box"><h3>Test or save a provider</h3>
+      <form id="mForm" autocomplete="off" style="display:grid;gap:8px">
+        <select id="mProv">${Object.entries(I.providers).map(([k, p]) => `<option value="${k}">${esc(p.label)}</option>`).join("")}</select>
+        <input id="mBase" placeholder="Base URL">
+        <input id="mModel" placeholder="Model id (e.g. qwen3.5:9b)">
+        <input id="mKey" type="password" placeholder="API key (used once; never shown again)" autocomplete="new-password">
+        <input id="mName" placeholder="Name to save under (e.g. reviewer-groq)">
+        <div class="actions"><button type="button" id="mTest">Test connection</button><button class="primary" type="submit">Test and save</button></div>
+      </form>
+      <pre class="box" id="mOut">${esc(testText(MM.last))}</pre>
+      <p style="font-size:12px;color:var(--muted)">A test is one free, read-only request (the provider's model list, or Ollama's installed and loaded models). No chat is sent and nothing is billed.</p>
+    </div></div></div>`;
+  const prov = $("#mProv"), setBase = () => { const p = I.providers[prov.value]; $("#mBase").value = p.base; $("#mKey").disabled = !p.needs_key; };
+  prov.onchange = setBase; setBase();
+  const form = () => ({ provider: prov.value, base_url: $("#mBase").value.trim(), model: $("#mModel").value.trim(), key: $("#mKey").value, name: $("#mName").value.trim() });
+  const clearKey = () => { $("#mKey").value = ""; };
+  $("#mTest").onclick = async e => { e.target.disabled = true; $("#mOut").textContent = "Testing…";
+    try { MM.last = await api("/api/models/test", { method: "POST", body: JSON.stringify(form()) }); $("#mOut").textContent = testText(MM.last); }
+    catch (err) { $("#mOut").textContent = err.message; } clearKey(); e.target.disabled = false; };
+  $("#mForm").onsubmit = async e => { e.preventDefault(); const f = form();
+    if (!f.name) return toast("Give the configuration a name");
+    if (!confirm(`Save "${f.name}" (${f.provider} / ${f.model})? It is tested first and saved only if the test passes. No agent changes until you assign it.`)) return;
+    try { const r = await api("/api/models/save", { method: "POST", body: JSON.stringify(f) }); MM.last = r.test; toast(`Saved ${r.saved.name}`); clearKey(); loadModels(); }
+    catch (err) { clearKey(); $("#mOut").textContent = err.message; } };
+  v.querySelectorAll("[data-mretest]").forEach(b => b.onclick = async () => { b.disabled = true;
+    try { MM.last = await api("/api/models/retest", { method: "POST", body: JSON.stringify({ name: b.dataset.mretest }) }); } catch (err) { MM.last = { status: "error", detail: err.message }; }
+    loadModels(); });
+  $("#apPreview").onclick = async () => {
+    try { MM.plan = await api("/api/models/plan", { method: "POST", body: JSON.stringify({ name: $("#apName").value, purpose: $("#apPurpose").value, company: $("#apCo").value }) });
+      $("#apOut").innerHTML = `<div class="box">${MM.plan.changes.map(c => `${esc(c.agent)}: ${esc(c.from)} → ${esc(c.to)}`).join("\n")}</div>
+        <button class="primary" id="apGo">Apply to these ${MM.plan.changes.length} agent(s)</button>`;
+      $("#apGo").onclick = async () => {
+        if (prompt(`Type APPLY to change the model of ${MM.plan.changes.length} agent(s). Other agents are not touched.`) !== "APPLY") return;
+        try { const r = await api("/api/models/apply", { method: "POST", body: JSON.stringify({ plan_id: MM.plan.plan_id, confirm: "APPLY" }) });
+          toast(`${r.applied.length} agent(s) now use ${r.config}`); S.agents = await api("/api/agents"); loadModels(); }
+        catch (err) { toast(err.message); } };
+    } catch (err) { $("#apOut").innerHTML = `<div class="box">${esc(err.message)}</div>`; } };
+};
+})();
+</script>
+</body>
+</html>

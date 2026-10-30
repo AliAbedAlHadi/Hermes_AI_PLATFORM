@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Customer Portal</title>
+<style>
+:root { --bg: #f6f7f9; --panel: #fff; --ink: #1b1f24; --muted: #66707c; --line: #e3e6ea; --accent: #3b5bdb; --chip: #f0f2f5; --bad: #c92a2a; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0f1216; --panel: #171b21; --ink: #e6e9ee; --muted: #9aa4b1; --line: #262c35; --accent: #7d95ff; --chip: #212731; --bad: #ff6b6b; }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 "Segoe UI", Tahoma, system-ui, sans-serif; }
+button, input, textarea { font: inherit; color: var(--ink); }
+button { cursor: pointer; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); padding: 8px 14px; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+input, textarea { width: 100%; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.wrap { max-width: 760px; margin: 0 auto; padding: 16px; height: 100%; display: flex; flex-direction: column; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+.login { margin: 12vh auto 0; width: min(420px, 100%); display: grid; gap: 12px; }
+.login h1 { margin: 0; font-size: 20px; }
+.muted { color: var(--muted); font-size: 13px; }
+.err { color: var(--bad); font-size: 13px; min-height: 18px; }
+header { display: flex; align-items: center; gap: 10px; padding: 6px 0 12px; }
+header h1 { font-size: 18px; margin: 0; flex: 1; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.chip { background: var(--chip); color: var(--muted); border-radius: 999px; padding: 3px 10px; font-size: 12px; }
+.msgs { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: 10px; padding: 12px 0; min-height: 0; }
+.msg { max-width: 80%; padding: 9px 13px; border-radius: 12px; white-space: pre-wrap; word-wrap: break-word; }
+.msg.me { align-self: flex-start; background: var(--accent); color: #fff; }
+.msg.them { align-self: flex-end; background: var(--panel); border: 1px solid var(--line); }
+.msg.wait { color: var(--muted); font-style: italic; }
+form.say { display: flex; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
+form.say textarea { min-height: 46px; height: 46px; resize: vertical; }
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const S = { me: null, msgs: [] };
+
+async function api(path, body) {
+  const r = await fetch(path, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {});
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw Object.assign(new Error(j.error || r.statusText), { status: r.status });
+  return j;
+}
+
+function login() {
+  $("#app").innerHTML = `<form class="card login" id="loginForm">
+    <h1>بوابة العملاء · Customer Portal</h1>
+    <div class="muted">أدخل رمز الدخول الذي وصلك من الشركة. Enter the login code you received.</div>
+    <input id="code" placeholder="رمز الدخول · login code" autocomplete="one-time-code" dir="ltr" required>
+    <div class="err" id="err"></div>
+    <button class="primary">دخول · Sign in</button></form>`;
+  $("#code").focus();
+  $("#loginForm").onsubmit = async e => { e.preventDefault();
+    try { await api("/api/portal/login", { code: $("#code").value }); start(); }
+    catch (err) { $("#err").textContent = err.status === 401 ? "الرمز غير صحيح · Wrong code" : err.message; } };
+}
+
+function render() {
+  const m = S.me;
+  $("#app").innerHTML = `<header><h1>${esc(m.company_name)} · أهلاً ${esc(m.name)}</h1><button id="out">خروج</button></header>
+    <div class="chips"><span class="chip">${esc(m.id)}</span><span class="chip">${esc(m.channel || "portal")}</span>
+      ${(m.projects || []).map(p => `<span class="chip">مشروع: ${esc(p)}</span>`).join("") || `<span class="chip">لا مشاريع بعد</span>`}</div>
+    <div class="msgs" id="msgs">${S.msgs.length ? S.msgs.map(x => `<div class="msg ${x.who} ${x.wait ? "wait" : ""}" dir="auto">${esc(x.text)}</div>`).join("")
+      : `<div class="muted" style="text-align:center;padding:40px 0">اكتب رسالتك إلى ${esc(m.company_name)}. Write to ${esc(m.company_name)}.</div>`}</div>
+    <form class="say" id="say"><textarea id="text" placeholder="رسالتك… (Enter للإرسال)" dir="auto"></textarea><button class="primary">إرسال</button></form>`;
+  const box = $("#msgs"); box.scrollTop = box.scrollHeight;
+  $("#out").onclick = async () => { await api("/api/portal/logout", {}); S.me = null; S.msgs = []; login(); };
+  $("#say").onsubmit = e => { e.preventDefault(); const t = $("#text").value.trim(); if (t) send(t); };
+  $("#text").onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("#say").requestSubmit(); } };
+  $("#text").focus();
+}
+
+async function send(text) {
+  // Only the new message travels: the server keeps the conversation and rebuilds its history itself.
+  S.msgs.push({ who: "me", text }); const w = { who: "them", text: "جارٍ الرد…", wait: true }; S.msgs.push(w); render();
+  try { const r = await api("/api/portal/chat", { message: text, message_id: crypto.randomUUID(), conversation_id: S.conv || null });
+    S.conv = r.conversation_id; Object.assign(w, { text: r.reply || "(no reply)", wait: false }); }
+  catch (e) { if (e.status === 401) return login(); Object.assign(w, { text: e.message, wait: false }); }
+  render();
+}
+
+async function start() {
+  try {
+    S.me = await api("/api/portal/me");
+    const c = await api("/api/portal/conversation");
+    S.conv = c.id; S.msgs = c.messages.map(m => ({ who: m.role === "user" ? "me" : "them", text: m.text }));
+    render();
+  } catch { login(); }
+}
+start();
+</script>
+</body>
+</html>

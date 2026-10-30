@@ -1,0 +1,19 @@
+[Unit]
+Description=Hermes Federation Console
+After=network-online.target
+
+[Service]
+# Replace "ubuntu" with your server user if different.
+User=ubuntu
+WorkingDirectory=/home/ubuntu/hermes-deploy/console
+# Settings live here, not in this file. The owner signs in at /login (setup code in the journal on first start).
+# (the Groq key goes in each Hermes profile's .env, see DEPLOY_ORACLE.md step 6)
+EnvironmentFile=/etc/hermes-console.env
+Environment=CONSOLE_HOST=127.0.0.1
+Environment=CONSOLE_PORT=8765
+Environment=PATH=/home/ubuntu/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/usr/bin/python3 -I /home/ubuntu/hermes-deploy/console/server.py
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

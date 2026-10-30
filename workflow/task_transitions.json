@@ -1,0 +1,91 @@
+{
+  "description": "Hermes Federation task state machine (spec v1.1 R11.02, gate R11.06). Each entry: state -> allowed next states. 'system_only' transitions are taken by the Kanban sync, the gateway recovery or the review gate; nobody can request them directly.",
+  "states": [
+    "NEW",
+    "TRIAGE",
+    "READY",
+    "RUNNING",
+    "REVIEWING",
+    "REWORK",
+    "ESCALATING",
+    "WAITING_CUSTOMER",
+    "WAITING_QUOTA",
+    "BLOCKED_EXTERNAL",
+    "SUCCEEDED",
+    "FAILED",
+    "CANCELLED"
+  ],
+  "terminal": [
+    "SUCCEEDED",
+    "FAILED",
+    "CANCELLED"
+  ],
+  "transitions": {
+    "NEW": [
+      "TRIAGE",
+      "CANCELLED"
+    ],
+    "TRIAGE": [
+      "READY",
+      "WAITING_CUSTOMER",
+      "CANCELLED"
+    ],
+    "READY": [
+      "RUNNING",
+      "WAITING_QUOTA",
+      "BLOCKED_EXTERNAL",
+      "CANCELLED"
+    ],
+    "RUNNING": [
+      "REVIEWING",
+      "ESCALATING",
+      "BLOCKED_EXTERNAL",
+      "WAITING_CUSTOMER",
+      "FAILED",
+      "CANCELLED"
+    ],
+    "REVIEWING": [
+      "SUCCEEDED",
+      "REWORK",
+      "FAILED"
+    ],
+    "REWORK": [
+      "RUNNING",
+      "ESCALATING",
+      "BLOCKED_EXTERNAL",
+      "CANCELLED"
+    ],
+    "ESCALATING": [
+      "READY",
+      "FAILED",
+      "CANCELLED"
+    ],
+    "WAITING_CUSTOMER": [
+      "TRIAGE",
+      "READY",
+      "CANCELLED"
+    ],
+    "WAITING_QUOTA": [
+      "READY",
+      "CANCELLED"
+    ],
+    "BLOCKED_EXTERNAL": [
+      "READY",
+      "FAILED",
+      "CANCELLED"
+    ],
+    "SUCCEEDED": [],
+    "FAILED": [],
+    "CANCELLED": []
+  },
+  "system_only": {
+    "READY->RUNNING": "a Kanban worker claimed the task",
+    "REWORK->RUNNING": "a Kanban worker claimed the rework attempt",
+    "RUNNING->REVIEWING": "the worker completed the Kanban task",
+    "RUNNING->ESCALATING": "the worker blocked on capability or retries ran out",
+    "RUNNING->BLOCKED_EXTERNAL": "the worker blocked on an external dependency",
+    "READY->BLOCKED_EXTERNAL": "the model gateway did not answer when the work was about to start",
+    "REWORK->BLOCKED_EXTERNAL": "the model gateway did not answer when the rework was about to start",
+    "REVIEWING->SUCCEEDED": "the review gate passed: tests, Reviewer and Verifier on the same commit and revision"
+  }
+}
